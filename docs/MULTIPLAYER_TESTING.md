@@ -53,7 +53,7 @@ Then `stop` and start the server again. `/reload` is not safe for plugins.
 
 ## The test kit
 
-The datapack adds three commands for ops:
+The datapack adds two functions for ops:
 
 | Command | What it does |
 |---|---|
