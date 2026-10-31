@@ -1,0 +1,32 @@
+name: SyncEquip
+version: '${version}'
+main: dev.syncequip.SyncEquipPlugin
+description: '${description}'
+api-version: '26.3'
+authors: [SyncEquip contributors]
+
+permissions:
+  syncequip.use:
+    description: Run a personal equipment sequence and view settings.
+    default: true
+  syncequip.hotkey:
+    description: Trigger a sequence with sneak + swap hands (when enabled in config).
+    default: true
+  syncequip.squad:
+    description: Create, join and manage squads.
+    default: true
+  syncequip.squad.start:
+    description: Start and cancel the sequence of a squad you lead.
+    default: true
+  syncequip.reload:
+    description: Reload config.yml and messages.yml.
+    default: op
+  syncequip.bypass.cooldown:
+    description: Ignore the sequence cooldown.
+    default: op
+  syncequip.admin:
+    description: Start or cancel the sequence of any squad you are in, plus reload and cooldown bypass.
+    default: op
+    children:
+      syncequip.reload: true
+      syncequip.bypass.cooldown: true

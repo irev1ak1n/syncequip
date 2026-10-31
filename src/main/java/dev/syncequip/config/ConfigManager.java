@@ -1,0 +1,201 @@
+package dev.syncequip.config;
+
+import dev.syncequip.config.SyncEquipSettings.Controls;
+import dev.syncequip.config.SyncEquipSettings.CountdownDisplay;
+import dev.syncequip.config.SyncEquipSettings.HotkeyAction;
+import dev.syncequip.config.SyncEquipSettings.Sounds;
+import dev.syncequip.config.SyncEquipSettings.Visuals;
+import dev.syncequip.equipment.EquipmentStep;
+import dev.syncequip.equipment.MissingItemPolicy;
+import dev.syncequip.synchronization.SequenceTimeline;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.logging.Logger;
+import net.kyori.adventure.key.InvalidKeyException;
+import net.kyori.adventure.key.Key;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.java.JavaPlugin;
+
+/** Loads {@code config.yml}, validates every value and produces a {@link SyncEquipSettings} snapshot. */
+public final class ConfigManager {
+
+    public static final List<EquipmentStep> DEFAULT_ORDER = List.of(EquipmentStep.BOOTS, EquipmentStep.LEGGINGS,
+            EquipmentStep.CHESTPLATE, EquipmentStep.HELMET, EquipmentStep.SHIELD);
+
+    private final JavaPlugin plugin;
+    private SyncEquipSettings settings;
+
+    public ConfigManager(JavaPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    /** (Re)loads the configuration from disk. Returns the warnings produced during validation. */
+    public List<String> load() {
+        plugin.saveDefaultConfig();
+        plugin.reloadConfig();
+        List<String> warnings = new ArrayList<>();
+        settings = parse(plugin.getConfig(), warnings);
+        Logger logger = plugin.getLogger();
+        for (String warning : warnings) {
+            logger.warning("config.yml: " + warning);
+        }
+        return warnings;
+    }
+
+    public SyncEquipSettings settings() {
+        return settings;
+    }
+
+    /** Parses and validates a configuration section. Invalid values fall back to safe defaults. */
+    public static SyncEquipSettings parse(ConfigurationSection config, List<String> warnings) {
+        int interval = intInRange(config, "equipment.interval-ticks", 2,
+                SequenceTimeline.MIN_INTERVAL, SequenceTimeline.MAX_INTERVAL, warnings);
+        List<EquipmentStep> order = parseOrder(config, warnings);
+        boolean requireEmpty = config.getBoolean("equipment.require-empty-slots", true);
+        MissingItemPolicy policy = parseEnum(config, "equipment.missing-item-policy", MissingItemPolicy.class,
+                MissingItemPolicy.ABORT, warnings);
+        boolean lockInventory = config.getBoolean("equipment.lock-inventory-during-sequence", true);
+
+        int soloCountdown = intInRange(config, "solo.countdown-seconds", 0, 0, 10, warnings);
+        int squadCountdown = intInRange(config, "synchronization.countdown-seconds", 3, 0, 10, warnings);
+        int maxSquad = intInRange(config, "synchronization.max-squad-size", 30, 2, Integer.MAX_VALUE, warnings);
+        if (maxSquad > 200) {
+            warnings.add("synchronization.max-squad-size is " + maxSquad
+                    + "; very large squads work but every member's sounds are broadcast to nearby players");
+        }
+        int inviteExpiry = intInRange(config, "synchronization.invite-expiry-seconds", 60, 5, 3600, warnings);
+        if (config.isSet("synchronization.shared-tick-scheduler")
+                && !config.getBoolean("synchronization.shared-tick-scheduler")) {
+            warnings.add("synchronization.shared-tick-scheduler cannot be disabled; all sequences always share "
+                    + "one tick scheduler");
+        }
+
+        Sounds sounds = new Sounds(
+                config.getBoolean("sounds.enabled", true),
+                config.getBoolean("sounds.use-vanilla-armor-sounds", true),
+                floatInRange(config, "sounds.volume", 1.0f, 0.0f, 4.0f, warnings),
+                floatInRange(config, "sounds.pitch", 1.0f, 0.5f, 2.0f, warnings),
+                soundKey(config, "sounds.armor-fallback-sound", "minecraft:item.armor.equip_generic", warnings),
+                soundKey(config, "sounds.shield.sound", "minecraft:item.shield.block", warnings),
+                floatInRange(config, "sounds.shield.volume", 0.8f, 0.0f, 4.0f, warnings),
+                floatInRange(config, "sounds.shield.pitch", 1.2f, 0.5f, 2.0f, warnings),
+                config.getBoolean("sounds.countdown.enabled", true),
+                soundKey(config, "sounds.countdown.sound", "minecraft:block.note_block.hat", warnings),
+                config.getBoolean("sounds.go.enabled", false),
+                soundKey(config, "sounds.go.sound", "minecraft:block.note_block.snare", warnings),
+                config.getBoolean("sounds.completion.enabled", false),
+                soundKey(config, "sounds.completion.sound", "minecraft:item.armor.equip_netherite", warnings));
+
+        Visuals visuals = new Visuals(
+                config.getBoolean("visuals.particles-enabled", false),
+                config.getBoolean("visuals.actionbar-enabled", true),
+                parseEnum(config, "visuals.countdown-display", CountdownDisplay.class, CountdownDisplay.TITLE,
+                        warnings));
+
+        Controls controls = new Controls(
+                config.getBoolean("controls.sneak-swap-trigger", false),
+                parseEnum(config, "controls.sneak-swap-action", HotkeyAction.class, HotkeyAction.SOLO, warnings),
+                intInRange(config, "controls.cooldown-seconds", 3, 0, 3600, warnings));
+
+        return new SyncEquipSettings(interval, order, requireEmpty, policy, lockInventory, soloCountdown,
+                squadCountdown, maxSquad, inviteExpiry, sounds, visuals, controls,
+                config.getBoolean("debug.log-sequence-ticks", false));
+    }
+
+    /** Convenience for tests and defaults: parse an empty configuration. */
+    public static SyncEquipSettings defaults() {
+        return parse(new YamlConfiguration(), new ArrayList<>());
+    }
+
+    private static List<EquipmentStep> parseOrder(ConfigurationSection config, List<String> warnings) {
+        if (!config.isList("equipment.order")) {
+            if (config.isSet("equipment.order")) {
+                warnings.add("equipment.order must be a list; using the default order");
+            }
+            return DEFAULT_ORDER;
+        }
+        List<EquipmentStep> order = new ArrayList<>();
+        Set<EquipmentStep> seen = EnumSet.noneOf(EquipmentStep.class);
+        for (String raw : config.getStringList("equipment.order")) {
+            EquipmentStep step = EquipmentStep.parse(raw).orElse(null);
+            if (step == null) {
+                warnings.add("equipment.order: unknown step '" + raw + "' ignored (valid: BOOTS, LEGGINGS, "
+                        + "CHESTPLATE, HELMET, SHIELD)");
+            } else if (!seen.add(step)) {
+                warnings.add("equipment.order: duplicate step " + step + " ignored");
+            } else {
+                order.add(step);
+            }
+        }
+        if (order.isEmpty()) {
+            warnings.add("equipment.order has no valid steps; using the default order");
+            return DEFAULT_ORDER;
+        }
+        return order;
+    }
+
+    private static int intInRange(ConfigurationSection config, String path, int def, int min, int max,
+                                  List<String> warnings) {
+        if (!config.isSet(path)) {
+            return def;
+        }
+        if (!config.isInt(path)) {
+            warnings.add(path + " must be a whole number; using " + def);
+            return def;
+        }
+        int value = config.getInt(path);
+        if (value < min || value > max) {
+            int clamped = Math.max(min, Math.min(max, value));
+            warnings.add(path + " = " + value + " is out of range [" + min + ", "
+                    + (max == Integer.MAX_VALUE ? "∞" : max) + "]; using " + clamped);
+            return clamped;
+        }
+        return value;
+    }
+
+    private static float floatInRange(ConfigurationSection config, String path, float def, float min, float max,
+                                      List<String> warnings) {
+        if (!config.isSet(path)) {
+            return def;
+        }
+        if (!(config.isDouble(path) || config.isInt(path))) {
+            warnings.add(path + " must be a number; using " + def);
+            return def;
+        }
+        float value = (float) config.getDouble(path);
+        if (value < min || value > max) {
+            float clamped = Math.max(min, Math.min(max, value));
+            warnings.add(path + " = " + value + " is out of range [" + min + ", " + max + "]; using " + clamped);
+            return clamped;
+        }
+        return value;
+    }
+
+    private static <E extends Enum<E>> E parseEnum(ConfigurationSection config, String path, Class<E> type,
+                                                   E def, List<String> warnings) {
+        String raw = config.getString(path);
+        if (raw == null) {
+            return def;
+        }
+        try {
+            return Enum.valueOf(type, raw.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            warnings.add(path + ": unknown value '" + raw + "'; using " + def);
+            return def;
+        }
+    }
+
+    private static String soundKey(ConfigurationSection config, String path, String def, List<String> warnings) {
+        String raw = config.getString(path, def);
+        try {
+            return Key.key(raw.trim().toLowerCase(Locale.ROOT)).asString();
+        } catch (InvalidKeyException e) {
+            warnings.add(path + ": '" + raw + "' is not a valid sound key; using " + def);
+            return def;
+        }
+    }
+}

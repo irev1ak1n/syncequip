@@ -1,0 +1,101 @@
+package dev.syncequip.util;
+
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.List;
+import java.util.logging.Level;
+import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.title.Title;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.java.JavaPlugin;
+
+/**
+ * Renders the MiniMessage strings from {@code messages.yml}. Keys missing from the server's copy
+ * fall back to the defaults bundled in the jar, so upgrading never produces blank messages.
+ */
+public final class MessageUtil {
+
+    private static final MiniMessage MINI = MiniMessage.miniMessage();
+
+    private final JavaPlugin plugin;
+    private YamlConfiguration messages = new YamlConfiguration();
+
+    public MessageUtil(JavaPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    public void load() {
+        File file = new File(plugin.getDataFolder(), "messages.yml");
+        if (!file.exists()) {
+            plugin.saveResource("messages.yml", false);
+        }
+        YamlConfiguration loaded = YamlConfiguration.loadConfiguration(file);
+        try (InputStream in = plugin.getResource("messages.yml")) {
+            if (in != null) {
+                loaded.setDefaults(YamlConfiguration.loadConfiguration(
+                        new InputStreamReader(in, StandardCharsets.UTF_8)));
+            }
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Could not read bundled messages.yml", e);
+        }
+        messages = loaded;
+    }
+
+    /** Shorthand for an unparsed (user-safe) placeholder. */
+    public static TagResolver ph(String name, Object value) {
+        return Placeholder.unparsed(name, String.valueOf(value));
+    }
+
+    /** Placeholder whose value is a pre-rendered component. */
+    public static TagResolver ph(String name, Component value) {
+        return Placeholder.component(name, value);
+    }
+
+    public String raw(String key) {
+        return messages.getString(key, "<red>Missing message: " + key);
+    }
+
+    public Component render(String key, TagResolver... placeholders) {
+        return MINI.deserialize(raw(key), placeholders);
+    }
+
+    /** Sends every line of a string-list message, without the prefix. */
+    public void sendList(Audience audience, String key) {
+        List<String> lines = messages.getStringList(key);
+        for (String line : lines) {
+            audience.sendMessage(MINI.deserialize(line));
+        }
+    }
+
+    /** Sends a chat message with the configured prefix. Empty messages are not sent. */
+    public void send(Audience audience, String key, TagResolver... placeholders) {
+        String raw = raw(key);
+        if (raw.isEmpty()) {
+            return;
+        }
+        Component prefix = MINI.deserialize(messages.getString("prefix", ""));
+        audience.sendMessage(prefix.append(MINI.deserialize(raw, placeholders)));
+    }
+
+    /** Sends a chat line without the prefix (used for multi-line output such as help). */
+    public void sendPlain(Audience audience, String key, TagResolver... placeholders) {
+        audience.sendMessage(render(key, placeholders));
+    }
+
+    public void actionBar(Audience audience, String key, TagResolver... placeholders) {
+        audience.sendActionBar(render(key, placeholders));
+    }
+
+    public void title(Audience audience, String titleKey, String subtitleKey, TagResolver... placeholders) {
+        Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofMillis(900), Duration.ofMillis(150));
+        Component subtitle = subtitleKey == null ? Component.empty() : render(subtitleKey, placeholders);
+        audience.showTitle(Title.title(render(titleKey, placeholders), subtitle, times));
+    }
+}

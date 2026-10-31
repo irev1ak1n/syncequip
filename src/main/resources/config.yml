@@ -1,0 +1,95 @@
+# ---------------------------------------------------------------------------
+#  SyncEquip configuration
+#  Reload with /syncequip reload. Sequences already running keep the settings
+#  they started with; new sequences use the reloaded values.
+# ---------------------------------------------------------------------------
+
+equipment:
+  # Server ticks between two equipment steps (1-10). 20 ticks = 1 second at full TPS.
+  # The default of 2 puts the five steps at offsets 0, 2, 4, 6 and 8 ticks (~0.4 s).
+  interval-ticks: 2
+
+  # Order of the steps. Any subset of BOOTS, LEGGINGS, CHESTPLATE, HELMET, SHIELD,
+  # each at most once. Unknown or duplicate entries are ignored with a warning.
+  order:
+    - BOOTS
+    - LEGGINGS
+    - CHESTPLATE
+    - HELMET
+    - SHIELD
+
+  # true:  a step only runs if its destination slot (armor slot / offhand) is empty.
+  # false: the piece currently worn is swapped back into the inventory slot the new
+  #        piece came from. Nothing is ever dropped or deleted.
+  require-empty-slots: true
+
+  # What to do when a step's item is missing or its slot is occupied:
+  #   ABORT - refuse to start; if it happens mid-sequence, stop that player's sequence
+  #           (pieces already equipped stay equipped).
+  #   SKIP  - skip that step and continue; a player needs at least one usable piece.
+  missing-item-policy: ABORT
+
+  # Block inventory clicks, drops and hand swaps during the ~0.4 s in which a
+  # player's equipment is actively changing.
+  lock-inventory-during-sequence: true
+
+solo:
+  # Countdown before a personal sequence (0 = start on the next tick).
+  countdown-seconds: 0
+
+synchronization:
+  # Countdown before a squad sequence (0-10). Every member sees the same beats.
+  countdown-seconds: 3
+  # Maximum squad size, leader included. There is no hard-coded upper limit.
+  max-squad-size: 30
+  # How long a squad invite stays valid.
+  invite-expiry-seconds: 60
+
+sounds:
+  # true:  SyncEquip equips silently and plays exactly one sound per step itself.
+  # false: no custom sounds; vanilla's own armor equip sounds play instead
+  #        (vanilla plays nothing for a shield moved into the offhand).
+  enabled: true
+  # Use the vanilla equip sound matching each armor material (leather, chain, iron,
+  # gold, diamond, netherite, turtle, copper). If false, armor-fallback-sound is used.
+  use-vanilla-armor-sounds: true
+  armor-fallback-sound: minecraft:item.armor.equip_generic
+  volume: 1.0
+  pitch: 1.0
+  shield:
+    sound: minecraft:item.shield.block
+    volume: 0.8
+    pitch: 1.2
+  # Short cue on each countdown beat, heard only by the participant.
+  countdown:
+    enabled: true
+    sound: minecraft:block.note_block.hat
+  # Cue when the countdown ends (same tick as the first step).
+  go:
+    enabled: false
+    sound: minecraft:block.note_block.snare
+  # Cue after the last step.
+  completion:
+    enabled: false
+    sound: minecraft:item.armor.equip_netherite
+
+visuals:
+  # A few small crit particles at the height of each piece as it is equipped.
+  particles-enabled: false
+  # Progress bar in the action bar while equipping.
+  actionbar-enabled: true
+  # How the countdown is shown: TITLE, ACTIONBAR or NONE.
+  countdown-display: TITLE
+
+controls:
+  # Start a sequence by sneaking and pressing the swap-hands key (Shift + F by default).
+  # While enabled, sneak + F no longer swaps hands; plain F still does.
+  sneak-swap-trigger: false
+  # SOLO: always a personal sequence. AUTO: start your squad if you lead one.
+  sneak-swap-action: SOLO
+  # Seconds between sequences per player (applies to every participant when a sequence starts).
+  cooldown-seconds: 3
+
+debug:
+  # Log the scheduled and actual server tick of every step for every player.
+  log-sequence-ticks: false

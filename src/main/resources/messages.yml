@@ -1,0 +1,99 @@
+# SyncEquip messages (MiniMessage format: https://docs.advntr.dev/minimessage/format)
+# Set a message to '' to disable it.
+
+prefix: '<dark_gray>[<gray>Sync<white>Equip</white></gray>]</dark_gray> '
+
+command:
+  unknown: '<red>Unknown subcommand <white><input></white>. Try <white>/syncequip help</white>.'
+  players-only: '<red>Only players can use this command.'
+  no-permission: '<red>You do not have permission to do that.'
+  squad-usage: '<red>Usage: /syncequip squad \<create|invite|join|leave|list|start|cancel|transfer>'
+  missing-player: '<red>Usage: /syncequip squad <sub> \<player>'
+  player-not-found: '<red>Player <white><player></white> is not online.'
+  failed: '<red>That did not work.'
+
+solo:
+  cannot-start: '<red>Cannot start: <reason>.'
+
+problem:
+  busy: 'already in a sequence'
+  cooldown: 'on cooldown for <seconds>s'
+  invalid: 'cannot change equipment right now'
+  offline: 'offline'
+  nothing: 'nothing to equip'
+  missing: 'missing <pieces>'
+  occupied: 'already wearing <pieces>'
+
+reason:
+  disconnected: 'disconnected'
+  died: 'you died'
+  changed_world: 'you changed worlds'
+  left_squad: 'you left the squad'
+  item_unavailable: 'an item was no longer available'
+  invalid_state: 'you could not change equipment'
+
+sequence:
+  countdown-title: '<white><bold><seconds>'
+  countdown-subtitle: '<gray>Hold formation'
+  countdown-actionbar: '<gray>Equipping in <white><bold><seconds></bold></white>...'
+  progress-actionbar: '<gray><bar> <white><piece>'
+  completed-actionbar: '<green>Equipped <count>/<total>'
+  completed-partial: '<yellow>Sequence finished: <count> of <total> pieces equipped (unavailable steps were skipped).'
+  removed-before-start: '<yellow>You were removed from the sequence before anything was equipped (<reason>). Your inventory is unchanged.'
+  interrupted: '<yellow>Sequence interrupted (<reason>): <count> of <total> pieces were equipped and stay on you; the rest are still in your inventory.'
+  member-dropped: '<yellow><player> dropped out of the sequence (<reason>).'
+  cancelled-before-start: '<yellow>Sequence cancelled before anything was equipped. Your inventory is unchanged.'
+  cancelled-midway: '<yellow>Sequence cancelled: <count> of <total> pieces were equipped and stay on you; the rest are still in your inventory.'
+  shutdown-before-start: '<yellow>SyncEquip is shutting down; the sequence was cancelled before anything was equipped.'
+  shutdown-midway: '<yellow>SyncEquip is shutting down; <count> of <total> pieces were equipped, the rest are still in your inventory.'
+
+squad:
+  created: '<green>Squad created. Invite players with <white>/syncequip squad invite \<player></white>.'
+  already-in-squad: '<red>You are already in a squad. Leave it first with <white>/syncequip squad leave</white>.'
+  not-in-squad: '<red>You are not in a squad.'
+  leader-only: '<red>Only the squad leader can do that.'
+  not-yourself: '<red>You cannot target yourself.'
+  already-member: '<red><player> is already in your squad.'
+  full: '<red>The squad is full (max <max> players).'
+  invite-sent: '<green>Invited <white><player></white>. The invite expires in <seconds>s.'
+  invite-received: '<green><white><leader></white> invited you to their squad. Join with <white><click:run_command:/syncequip squad join <leader>>/syncequip squad join <leader></click></white> within <seconds>s.'
+  invite-leave-first: '<gray>You are already in a squad; leave it before joining.'
+  no-such-squad: '<red><player> is not leading a squad.'
+  not-invited: '<red>You have no valid invite from <player>.'
+  member-joined: '<green><white><player></white> joined the squad.'
+  member-left: '<yellow><player> left the squad.'
+  leader-changed: '<gold><player> is now the squad leader.'
+  left: '<yellow>You left the squad.'
+  target-not-member: '<red><player> is not in your squad.'
+  list-header: '<gold>Squad members (<count>/<max>):'
+  list-leader: ' <gold>★</gold> <white><player></white> <gray>(leader)'
+  list-member: ' <gray>•</gray> <white><player>'
+  already-running: '<red>Your squad already has a sequence running.'
+  nothing-to-cancel: '<red>Your squad has no sequence running.'
+  start-blocked: '<red>Cannot start: <count> member(s) are not ready:'
+  start-blocked-line: ' <gray>•</gray> <white><player></white><gray>: <reason>'
+  started: '<green><white><leader></white> started the squad sequence (<count> players). Hold still!'
+
+settings:
+  header: '<gold>SyncEquip settings:'
+  line: ' <gray><name>:</gray> <white><value>'
+
+reload:
+  success: '<green>Configuration reloaded.'
+  warnings: '<yellow>Configuration reloaded with <count> warning(s):'
+  warning-line: ' <gray>• <warning>'
+
+help:
+  header: '<gold>SyncEquip commands:'
+  lines:
+    - ' <white>/syncequip solo</white> <gray>- equip your armor and shield in sequence'
+    - ' <white>/syncequip squad create</white> <gray>- create a squad'
+    - ' <white>/syncequip squad invite \<player></white> <gray>- invite a player'
+    - ' <white>/syncequip squad join \<leader></white> <gray>- join a squad you were invited to'
+    - ' <white>/syncequip squad leave</white> <gray>- leave your squad'
+    - ' <white>/syncequip squad list</white> <gray>- list squad members'
+    - ' <white>/syncequip squad start</white> <gray>- start the synchronized sequence (leader)'
+    - ' <white>/syncequip squad cancel</white> <gray>- cancel the running sequence (leader)'
+    - ' <white>/syncequip squad transfer \<player></white> <gray>- make another member the leader'
+    - ' <white>/syncequip settings</white> <gray>- show the active settings'
+    - ' <white>/syncequip reload</white> <gray>- reload the configuration (admin)'
