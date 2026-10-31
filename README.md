@@ -360,6 +360,9 @@ A manual checklist is in [docs/TESTING.md](docs/TESTING.md), and [docs/MULTIPLAY
 explains how to run a local Paper server and let friends join. For testers there is a one page
 [quick checklist](docs/QUICK_CHECKLIST.md), and for maintainers a [release checklist](docs/RELEASE_CHECKLIST.md). Keep the test server folder outside this repository.
 
+A bot based test that needs no Minecraft account is in [bot-test/README.md](bot-test/README.md). It checks server side timing and
+inventory results with simulated players, and it cannot check animations or sounds.
+
 ## Troubleshooting
 
 | Problem | Fix |
