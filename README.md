@@ -36,6 +36,7 @@ The plugin runs entirely on the server. Players need no mods, resource packs or 
 - [Building from source](#building-from-source)
 - [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
+- [Testing on a real server](#testing-on-a-real-server)
 - [What still needs in-game testing](#what-still-needs-in-game-testing)
 - [Roadmap](#roadmap)
 - [License](#license)
@@ -352,6 +353,11 @@ client. The tests check which sound *would* be played, not what it sounds like.
 
 CI (`.github/workflows/build.yml`) runs `./gradlew build` on JDK 25 for every push and pull
 request and uploads the jar as an artifact.
+
+## Testing on a real server
+
+A manual checklist is in [docs/TESTING.md](docs/TESTING.md), and [docs/MULTIPLAYER_TESTING.md](docs/MULTIPLAYER_TESTING.md)
+explains how to run a local Paper server and let a friend join. Keep the test server folder outside this repository.
 
 ## Troubleshooting
 

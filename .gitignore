@@ -20,3 +20,10 @@ Thumbs.db
 # Local test servers
 run/
 server/
+
+# Local Paper test servers
+test-server/
+syncequip-test-server/
+eula.txt
+server.properties
+*.log
