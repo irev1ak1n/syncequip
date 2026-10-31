@@ -357,7 +357,8 @@ request and uploads the jar as an artifact.
 ## Testing on a real server
 
 A manual checklist is in [docs/TESTING.md](docs/TESTING.md), and [docs/MULTIPLAYER_TESTING.md](docs/MULTIPLAYER_TESTING.md)
-explains how to run a local Paper server and let a friend join. Keep the test server folder outside this repository.
+explains how to run a local Paper server and let friends join. For testers there is a one page
+[quick checklist](docs/QUICK_CHECKLIST.md), and for maintainers a [release checklist](docs/RELEASE_CHECKLIST.md). Keep the test server folder outside this repository.
 
 ## Troubleshooting
 
