@@ -25,7 +25,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
-/** SyncEquip entry point: wires the components together and owns the single tick task. */
 public class SyncEquipPlugin extends JavaPlugin {
 
     private ConfigManager configManager;
@@ -56,14 +55,14 @@ public class SyncEquipPlugin extends JavaPlugin {
         registerCommand("syncequip", "Synchronized armor equipping", List.of("se", "sequip"),
                 new SyncEquipCommand(this));
 
-        // The one and only timer: every sequence on the server advances from here.
+        // This is the only timer in the plugin. Every sequence on the server advances from this one task.
         tickTask = getServer().getScheduler().runTaskTimer(this, () -> scheduler.tick(Bukkit.getCurrentTick()), 1L, 1L);
     }
 
     @Override
     public void onDisable() {
         if (scheduler != null) {
-            // Each step is an atomic move, so stopping here leaves every inventory valid as it is.
+            // Each step is an atomic move, so stopping here always leaves every inventory in a valid state.
             scheduler.cancelAll(FinishReason.SHUTDOWN);
         }
         if (tickTask != null) {
@@ -74,17 +73,12 @@ public class SyncEquipPlugin extends JavaPlugin {
         }
     }
 
-    /** Reloads config and messages. Running sequences keep the settings they started with. */
     public List<String> reloadSettings() {
         List<String> warnings = configManager.load();
         messages.load();
         return warnings;
     }
 
-    /**
-     * Removes a player from their squad, pulling them out of the squad's running sequence first and
-     * notifying the remaining members (including any leadership change).
-     */
     public void leaveSquad(UUID playerId, RemovalReason reason) {
         Squad squad = squads.squadOf(playerId).orElse(null);
         if (squad == null) {

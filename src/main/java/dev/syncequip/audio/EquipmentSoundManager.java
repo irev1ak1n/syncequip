@@ -7,18 +7,9 @@ import org.bukkit.Material;
 import org.bukkit.SoundCategory;
 import org.bukkit.entity.Player;
 
-/**
- * Plays the per-step equip sounds.
- *
- * <p>When custom sounds are enabled, armor is equipped silently (see
- * {@link dev.syncequip.equipment.EquipmentManager#equip}) and this class plays exactly one sound per
- * step at the player's position, so nearby players hear it spatially. When custom sounds are
- * disabled, vanilla plays its own armor sounds and this class stays quiet, so a step never produces
- * two sounds.
- */
+/** With custom sounds on, armor is equipped silently and this class plays one sound per step. With them off, it plays nothing. */
 public final class EquipmentSoundManager {
 
-    /** Vanilla equip sound for an armor material, chosen by the material's name prefix. */
     public static String vanillaArmorSound(Material material, String fallback) {
         String name = material.name();
         if (material == Material.TURTLE_HELMET) {
@@ -48,7 +39,6 @@ public final class EquipmentSoundManager {
         return fallback;
     }
 
-    /** The sound key SyncEquip plays for a step, or {@code null} when custom sounds are disabled. */
     public static String soundFor(EquipmentStep step, Material material, SyncEquipSettings.Sounds sounds) {
         if (!sounds.enabled()) {
             return null;
@@ -61,7 +51,6 @@ public final class EquipmentSoundManager {
                 : sounds.armorFallbackSound();
     }
 
-    /** Plays the step sound at the player's location for everyone in hearing range. */
     public void playStep(Player player, EquipmentStep step, Material material, SyncEquipSettings.Sounds sounds) {
         String key = soundFor(step, material, sounds);
         if (key == null) {
@@ -74,7 +63,6 @@ public final class EquipmentSoundManager {
         player.getWorld().playSound(location, key, SoundCategory.PLAYERS, volume, pitch);
     }
 
-    /** Plays a cue (countdown tick, "go", completion) only to the given player. */
     public void playCue(Player player, String key, float volume, float pitch) {
         player.playSound(player.getLocation(), key, SoundCategory.PLAYERS, volume, pitch);
     }

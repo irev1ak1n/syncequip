@@ -8,10 +8,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.LongSupplier;
 
-/**
- * Squad membership bookkeeping. Pure Java with no Bukkit dependency; the command layer turns the
- * returned statuses into player-facing messages. Squads live in memory only.
- */
 public final class SquadManager {
 
     public enum Status {
@@ -28,13 +24,6 @@ public final class SquadManager {
         SQUAD_FULL
     }
 
-    /**
-     * Outcome of a player leaving.
-     *
-     * @param squad     the squad they left (may now be disbanded)
-     * @param newLeader the new leader if leadership moved, otherwise {@code null}
-     * @param disbanded whether the squad no longer exists
-     */
     public record LeaveResult(Status status, Squad squad, UUID newLeader, boolean disbanded) {
     }
 
@@ -96,7 +85,6 @@ public final class SquadManager {
         return Status.OK;
     }
 
-    /** Removes a player. A departing leader hands leadership to the longest-standing member. */
     public LeaveResult leave(UUID player) {
         Squad squad = byPlayer.remove(player);
         if (squad == null) {
@@ -108,6 +96,7 @@ public final class SquadManager {
             byId.remove(squad.id());
             return new LeaveResult(Status.OK, squad, null, true);
         }
+        // A leaving leader hands leadership to the member who has been in the squad the longest.
         UUID newLeader = null;
         if (wasLeader) {
             newLeader = squad.members().iterator().next();

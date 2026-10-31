@@ -9,14 +9,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 
-/**
- * Optional activation by <b>sneaking while pressing the swap-hands key</b> (Shift + F by default).
- *
- * <p>The server cannot see keyboard input; it sees the <em>swap hands action</em>, which the client
- * sends whenever the player presses their swap key, and it knows whether the player is sneaking.
- * When the trigger fires the swap itself is cancelled so the offhand is not disturbed. Plain F
- * (without sneaking) keeps working exactly as in vanilla.
- */
 public final class HotkeyListener implements Listener {
 
     public static final String PERMISSION = "syncequip.hotkey";
@@ -34,9 +26,11 @@ public final class HotkeyListener implements Listener {
         if (!settings.controls().sneakSwapTrigger() || !player.isSneaking() || !player.hasPermission(PERMISSION)) {
             return;
         }
+        // The swap is cancelled so the offhand item is not disturbed when the trigger fires.
         event.setCancelled(true);
+        // Holding the keys down must not queue up repeated sequences, so a busy player is ignored here.
         if (plugin.sequenceService().scheduler().isBusy(player.getUniqueId())) {
-            return; // holding the keys must not queue repeated sequences
+            return;
         }
         boolean leadsSquad = plugin.squads().squadOf(player.getUniqueId())
                 .map(squad -> SquadSequenceController.canControl(player, squad))

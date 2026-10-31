@@ -4,10 +4,6 @@ import dev.syncequip.equipment.EquipmentStep;
 import dev.syncequip.equipment.MissingItemPolicy;
 import java.util.List;
 
-/**
- * Validated, immutable snapshot of {@code config.yml}. A new snapshot replaces the old one on reload;
- * sequences that are already running keep the timeline they were started with.
- */
 public record SyncEquipSettings(
         int intervalTicks,
         List<EquipmentStep> order,
@@ -54,9 +50,7 @@ public record SyncEquipSettings(
     }
 
     public enum HotkeyAction {
-        /** Always start a personal sequence. */
         SOLO,
-        /** Start the squad sequence when the player leads a squad, otherwise a personal one. */
         AUTO
     }
 

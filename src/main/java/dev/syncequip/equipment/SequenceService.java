@@ -31,10 +31,6 @@ import org.bukkit.Particle;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 
-/**
- * Starts sequences and executes them. Solo and squad mode share this one implementation: a solo
- * sequence is simply a sequence with a single participant.
- */
 public final class SequenceService implements SequenceCallbacks {
 
     public static final String BYPASS_COOLDOWN = "syncequip.bypass.cooldown";
@@ -48,7 +44,6 @@ public final class SequenceService implements SequenceCallbacks {
     private final MessageUtil messages;
     private final CooldownTracker cooldowns;
     private final LongSupplier currentTick;
-    /** Settings captured when each sequence started, so a reload never changes a running sequence. */
     private final Map<Long, SyncEquipSettings> sequenceSettings = new HashMap<>();
 
     public SequenceService(Server server, Logger logger, TickSequenceScheduler scheduler,
@@ -66,13 +61,7 @@ public final class SequenceService implements SequenceCallbacks {
         this.currentTick = currentTick;
     }
 
-    // ------------------------------------------------------------------ starting
 
-    /**
-     * Checks whether a player could take part in a sequence right now.
-     *
-     * @return a short, rendered reason if they cannot, or empty if they are ready
-     */
     public Optional<Component> checkReady(Player player, SyncEquipSettings config) {
         if (scheduler.isBusy(player.getUniqueId())) {
             return Optional.of(messages.render("problem.busy"));
@@ -102,7 +91,6 @@ public final class SequenceService implements SequenceCallbacks {
         return Optional.of(Component.join(JoinConfiguration.commas(true), parts));
     }
 
-    /** Starts a personal sequence. Sends feedback to the player either way. */
     public boolean startSolo(Player player) {
         SyncEquipSettings config = settings.get();
         Optional<Component> problem = checkReady(player, config);
@@ -114,13 +102,10 @@ public final class SequenceService implements SequenceCallbacks {
         return true;
     }
 
-    /**
-     * Starts a sequence for already-validated players on one shared timeline. All participants get
-     * the same start tick, so each step lands on the same server tick for every one of them.
-     */
     public SyncSequence startGroup(SyncSequence.Mode mode, UUID squadId, Player initiator, List<Player> players,
                                    int countdownSeconds, SyncEquipSettings config) {
         SequenceTimeline timeline = new SequenceTimeline(countdownSeconds, config.intervalTicks(), config.order());
+        // Every participant shares this one start tick, which is why each step lands on the same server tick for all of them.
         long startTick = currentTick.getAsLong() + 1;
         List<UUID> ids = players.stream().map(Player::getUniqueId).toList();
         SyncSequence sequence = scheduler.schedule(mode, squadId, initiator.getUniqueId(), ids, timeline,
@@ -149,7 +134,6 @@ public final class SequenceService implements SequenceCallbacks {
         return scheduler;
     }
 
-    // ------------------------------------------------------------------ callbacks
 
     @Override
     public void onCountdown(SyncSequence sequence, int secondsRemaining, long tick) {
@@ -172,8 +156,7 @@ public final class SequenceService implements SequenceCallbacks {
     @Override
     public void onBeforeFirstStep(SyncSequence sequence, long tick) {
         SyncEquipSettings config = settingsFor(sequence);
-        // Re-validate immediately before the first item moves: inventories may have changed during
-        // the countdown.
+        // Inventories can change during the countdown, so everyone is checked again just before the first item moves.
         for (UUID id : List.copyOf(sequence.participants())) {
             Player player = server.getPlayer(id);
             if (player == null) {
@@ -213,6 +196,7 @@ public final class SequenceService implements SequenceCallbacks {
             sequence.removeParticipant(participant, RemovalReason.DISCONNECTED);
             return StepOutcome.SKIPPED;
         }
+        // Equipping is silent when custom sounds are on, so each step plays exactly one sound and never two.
         EquipmentManager.Result result = equipmentManager.equip(player, step, config.requireEmptySlots(),
                 config.sounds().enabled());
         StepOutcome outcome = switch (result.status()) {
@@ -315,7 +299,6 @@ public final class SequenceService implements SequenceCallbacks {
         sequenceSettings.remove(sequence.id());
     }
 
-    // ------------------------------------------------------------------ helpers
 
     private SyncEquipSettings settingsFor(SyncSequence sequence) {
         SyncEquipSettings config = sequenceSettings.get(sequence.id());

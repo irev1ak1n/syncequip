@@ -172,7 +172,6 @@ class CommandTest extends PluginTestBase {
         PlayerMock player = playerWithKit("Steve");
         run(player, "solo");
         tick(15);
-        // Take the armor off again and hand out a fresh kit.
         for (EquipmentSlot slot : SEQUENCE_SLOTS) {
             player.getInventory().setItem(slot, null);
         }

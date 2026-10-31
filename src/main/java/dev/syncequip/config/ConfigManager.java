@@ -20,7 +20,6 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-/** Loads {@code config.yml}, validates every value and produces a {@link SyncEquipSettings} snapshot. */
 public final class ConfigManager {
 
     public static final List<EquipmentStep> DEFAULT_ORDER = List.of(EquipmentStep.BOOTS, EquipmentStep.LEGGINGS,
@@ -33,7 +32,6 @@ public final class ConfigManager {
         this.plugin = plugin;
     }
 
-    /** (Re)loads the configuration from disk. Returns the warnings produced during validation. */
     public List<String> load() {
         plugin.saveDefaultConfig();
         plugin.reloadConfig();
@@ -50,7 +48,7 @@ public final class ConfigManager {
         return settings;
     }
 
-    /** Parses and validates a configuration section. Invalid values fall back to safe defaults. */
+    /** Invalid values fall back to safe defaults and add a warning, so a bad config never stops the plugin loading. */
     public static SyncEquipSettings parse(ConfigurationSection config, List<String> warnings) {
         int interval = intInRange(config, "equipment.interval-ticks", 2,
                 SequenceTimeline.MIN_INTERVAL, SequenceTimeline.MAX_INTERVAL, warnings);
@@ -106,7 +104,6 @@ public final class ConfigManager {
                 config.getBoolean("debug.log-sequence-ticks", false));
     }
 
-    /** Convenience for tests and defaults: parse an empty configuration. */
     public static SyncEquipSettings defaults() {
         return parse(new YamlConfiguration(), new ArrayList<>());
     }

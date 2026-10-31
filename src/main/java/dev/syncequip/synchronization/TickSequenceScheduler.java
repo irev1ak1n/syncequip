@@ -8,15 +8,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * The single, shared scheduler for every equipment sequence on the server.
- *
- * <p>It is driven by exactly one repeating server task that calls {@link #tick(long)} once per tick
- * with the current server tick. Solo and squad sequences, and any number of concurrent squads, all
- * advance from that one loop, so there are no per-player timers that could drift apart.
- *
- * <p>This class has no Bukkit dependency, which keeps the timing logic unit-testable.
- */
+/** One shared scheduler advances every sequence, so no player gets a private timer that could drift away from the others. */
 public final class TickSequenceScheduler {
 
     private final Logger logger;
@@ -27,13 +19,6 @@ public final class TickSequenceScheduler {
         this.logger = logger;
     }
 
-    /**
-     * Registers a new sequence.
-     *
-     * @param startTick the shared server tick at which the timeline begins; must be in the future
-     *                  relative to the tick that will next call {@link #tick(long)}
-     * @throws IllegalStateException if any participant is already in an active sequence
-     */
     public SyncSequence schedule(SyncSequence.Mode mode, UUID squadId, UUID initiator,
                                  Collection<UUID> participants, SequenceTimeline timeline, long startTick,
                                  SequenceCallbacks callbacks) {
@@ -48,7 +33,6 @@ public final class TickSequenceScheduler {
         return sequence;
     }
 
-    /** Advances every active sequence to {@code now}. Called once per server tick. */
     public void tick(long now) {
         if (active.isEmpty()) {
             return;
@@ -80,12 +64,10 @@ public final class TickSequenceScheduler {
         return findByParticipant(participant).isPresent();
     }
 
-    /** Removes a participant from whatever sequence they are in. */
     public boolean removeParticipant(UUID participant, RemovalReason reason) {
         return findByParticipant(participant).map(s -> s.removeParticipant(participant, reason)).orElse(false);
     }
 
-    /** Ends every running sequence, e.g. when the plugin is disabled. */
     public void cancelAll(FinishReason reason) {
         for (SyncSequence sequence : List.copyOf(active)) {
             sequence.cancel(reason);

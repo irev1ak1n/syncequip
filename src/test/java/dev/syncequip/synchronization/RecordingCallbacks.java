@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.BiFunction;
 
-/** Test double that records every callback the scheduler makes. */
 final class RecordingCallbacks implements SequenceCallbacks {
 
     record Execution(long sequenceId, UUID participant, EquipmentStep step, int index, long scheduled, long actual) {
@@ -24,7 +23,6 @@ final class RecordingCallbacks implements SequenceCallbacks {
     final List<FinishReason> finishes = new ArrayList<>();
     final List<Long> beforeFirstStep = new ArrayList<>();
 
-    /** Decides the outcome of each step; defaults to always equipping. */
     BiFunction<UUID, EquipmentStep, StepOutcome> outcome = (id, step) -> StepOutcome.EQUIPPED;
 
     @Override

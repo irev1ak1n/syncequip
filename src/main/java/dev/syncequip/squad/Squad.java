@@ -7,12 +7,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/** A group of players who equip together. The leader is always also a member. */
 public final class Squad {
 
     private final UUID id = UUID.randomUUID();
     private final Set<UUID> members = new LinkedHashSet<>();
-    /** Invited player -> wall-clock millis at which the invite expires. */
     private final Map<UUID, Long> invites = new HashMap<>();
     private UUID leader;
 
@@ -33,7 +31,6 @@ public final class Squad {
         return leader.equals(player);
     }
 
-    /** Members in join order, leader first at creation. */
     public Set<UUID> members() {
         return Collections.unmodifiableSet(members);
     }

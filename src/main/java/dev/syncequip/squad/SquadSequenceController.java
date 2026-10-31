@@ -18,10 +18,6 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 
-/**
- * Validates a whole squad and launches its synchronized sequence. Every member is placed on one
- * shared {@link SyncSequence}, so each step is executed for all members inside the same tick.
- */
 public final class SquadSequenceController {
 
     public static final String PERMISSION_START = "syncequip.squad.start";
@@ -42,7 +38,6 @@ public final class SquadSequenceController {
         this.settings = settings;
     }
 
-    /** Whether {@code player} may start or cancel the given squad's sequence. */
     public static boolean canControl(Player player, Squad squad) {
         return (squad.isLeader(player.getUniqueId()) && player.hasPermission(PERMISSION_START))
                 || player.hasPermission(PERMISSION_ADMIN);

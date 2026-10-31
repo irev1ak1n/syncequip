@@ -8,18 +8,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * One running equipment sequence shared by one or more participants.
- *
- * <p>Every participant shares a single timeline and a single start tick. When an event becomes due,
- * it is executed for <em>all</em> participants inside the same {@link #advance(long)} call, so the
- * corresponding step is guaranteed to land on the same server tick for everyone.
- *
- * <p>Lag handling: if the driver calls {@link #advance(long)} late (e.g. the server skipped ahead),
- * the late event runs immediately and the remaining timeline is shifted by the same amount. At most
- * one tick offset is processed per call, so a lag spike never collapses several beats into one and
- * the rhythm between steps is preserved.
- */
 public final class SyncSequence {
 
     public enum Mode {
@@ -66,11 +54,6 @@ public final class SyncSequence {
         }
     }
 
-    /**
-     * Advances the timeline to {@code now}.
-     *
-     * @return {@code true} once the sequence has finished and can be discarded
-     */
     public boolean advance(long now) {
         if (state == State.FINISHED) {
             return true;
@@ -85,6 +68,7 @@ public final class SyncSequence {
         if (now < due) {
             return false;
         }
+        // If the server runs late, the due event runs at once and later events shift by the same delay. Spacing between steps stays the same.
         drift += now - due;
 
         long offset = next.offset();
@@ -138,11 +122,6 @@ public final class SyncSequence {
         }
     }
 
-    /**
-     * Removes a participant. Pieces they already equipped stay equipped; nothing is rolled back.
-     *
-     * @return whether the participant was part of this (unfinished) sequence
-     */
     public boolean removeParticipant(UUID participant, RemovalReason reason) {
         if (state == State.FINISHED) {
             return false;
@@ -179,7 +158,6 @@ public final class SyncSequence {
         return mode;
     }
 
-    /** The squad this sequence belongs to, or {@code null} for solo sequences. */
     public UUID squadId() {
         return squadId;
     }
@@ -192,12 +170,10 @@ public final class SyncSequence {
         return timeline;
     }
 
-    /** The shared server tick at which the timeline (offset 0) begins. */
     public long startTick() {
         return startTick;
     }
 
-    /** Ticks the timeline has been pushed back by late execution. */
     public long drift() {
         return drift;
     }
@@ -210,7 +186,6 @@ public final class SyncSequence {
         return state == State.FINISHED;
     }
 
-    /** Whether equipment has started changing (the first step was reached). */
     public boolean hasEquippingStarted() {
         return equippingStarted;
     }

@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.LongSupplier;
 
-/** Per-player cooldowns measured in wall-clock milliseconds. */
 public final class CooldownTracker {
 
     private final LongSupplier clock;
@@ -23,7 +22,6 @@ public final class CooldownTracker {
         readyAt.put(player, clock.getAsLong() + seconds * 1000L);
     }
 
-    /** Remaining cooldown in milliseconds; {@code 0} when ready. */
     public long remainingMillis(UUID player) {
         Long until = readyAt.get(player);
         if (until == null) {
@@ -37,7 +35,6 @@ public final class CooldownTracker {
         return remaining;
     }
 
-    /** Remaining cooldown rounded up to whole seconds, for messages. */
     public int remainingSeconds(UUID player) {
         return (int) ((remainingMillis(player) + 999) / 1000);
     }

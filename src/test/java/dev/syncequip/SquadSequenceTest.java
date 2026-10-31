@@ -19,7 +19,6 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
-/** End-to-end squad sequences: many players, one shared timeline. */
 class SquadSequenceTest extends PluginTestBase {
 
     private List<PlayerMock> formSquad(int size) {
@@ -146,7 +145,7 @@ class SquadSequenceTest extends PluginTestBase {
     @Test
     void memberWithoutEquipmentBlocksStartAndIsNamed() {
         List<PlayerMock> squad = formSquad(3);
-        squad.get(2).getInventory().setItem(10, null); // Soldier2 has no leggings
+        squad.get(2).getInventory().setItem(10, null);
         run(squad.getFirst(), "squad", "start");
         tick(80);
 
@@ -215,7 +214,7 @@ class SquadSequenceTest extends PluginTestBase {
         List<PlayerMock> squad = formSquad(2);
         run(squad.getFirst(), "squad", "start");
         tick(30);
-        squad.get(1).getInventory().setItem(13, null); // drops the shield during the countdown
+        squad.get(1).getInventory().setItem(13, null);
         tick(80);
 
         assertEquals(5, countEquipped(squad.get(0)));
@@ -259,7 +258,6 @@ class SquadSequenceTest extends PluginTestBase {
             assertEquals(ticks.get(alpha).get(slot), ticks.get(alpha2).get(slot));
             assertEquals(ticks.get(bravo).get(slot), ticks.get(bravo2).get(slot));
         }
-        // Alpha's first steps ran before recording began, so compare the helmet: squads stay 3 ticks apart.
         assertEquals(3, ticks.get(bravo).get(EquipmentSlot.HEAD) - ticks.get(alpha).get(EquipmentSlot.HEAD));
         assertFalse(ticks.get(alpha).get(EquipmentSlot.OFF_HAND).equals(ticks.get(bravo).get(EquipmentSlot.OFF_HAND)));
         assertEquals(5, countEquipped(bravo2));

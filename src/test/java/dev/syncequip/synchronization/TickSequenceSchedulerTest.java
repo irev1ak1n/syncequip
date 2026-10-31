@@ -138,7 +138,7 @@ class TickSequenceSchedulerTest {
     void cancellingMidwayStopsRemainingSteps() {
         List<UUID> squad = players(2);
         SyncSequence sequence = schedule(squad, 0, 0);
-        runTicks(0, 3); // boots (0) and leggings (2) have run
+        runTicks(0, 3);
 
         sequence.cancel(FinishReason.CANCELLED);
         runTicks(4, 20);
@@ -223,7 +223,6 @@ class TickSequenceSchedulerTest {
     void lagSpikeShiftsTheRestOfTheTimelineAndPreservesRhythm() {
         List<UUID> squad = players(6);
         SyncSequence sequence = schedule(squad, 0, 0);
-        // Boots at tick 0, then the server stalls: the next tick the scheduler sees is 7.
         scheduler.tick(0);
         List<Long> observed = new ArrayList<>(List.of(7L, 8L, 9L, 10L, 11L, 12L, 13L, 14L, 15L, 16L, 17L));
         for (long tick : observed) {
@@ -232,7 +231,6 @@ class TickSequenceSchedulerTest {
 
         for (UUID member : squad) {
             List<Long> ticks = callbacks.forParticipant(member).stream().map(RecordingCallbacks.Execution::actual).toList();
-            // Leggings was due at 2 and runs late at 7; the remaining steps keep their 2-tick spacing.
             assertEquals(List.of(0L, 7L, 9L, 11L, 13L), ticks);
         }
         assertEquals(5, sequence.drift());
@@ -246,7 +244,7 @@ class TickSequenceSchedulerTest {
         UUID player = UUID.randomUUID();
         schedule(List.of(player), 0, 0);
         scheduler.tick(0);
-        scheduler.tick(50); // every remaining step is overdue
+        scheduler.tick(50);
         scheduler.tick(51);
         scheduler.tick(52);
 

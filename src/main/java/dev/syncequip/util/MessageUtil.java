@@ -16,10 +16,6 @@ import net.kyori.adventure.title.Title;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-/**
- * Renders the MiniMessage strings from {@code messages.yml}. Keys missing from the server's copy
- * fall back to the defaults bundled in the jar, so upgrading never produces blank messages.
- */
 public final class MessageUtil {
 
     private static final MiniMessage MINI = MiniMessage.miniMessage();
@@ -48,12 +44,10 @@ public final class MessageUtil {
         messages = loaded;
     }
 
-    /** Shorthand for an unparsed (user-safe) placeholder. */
     public static TagResolver ph(String name, Object value) {
         return Placeholder.unparsed(name, String.valueOf(value));
     }
 
-    /** Placeholder whose value is a pre-rendered component. */
     public static TagResolver ph(String name, Component value) {
         return Placeholder.component(name, value);
     }
@@ -66,7 +60,6 @@ public final class MessageUtil {
         return MINI.deserialize(raw(key), placeholders);
     }
 
-    /** Sends every line of a string-list message, without the prefix. */
     public void sendList(Audience audience, String key) {
         List<String> lines = messages.getStringList(key);
         for (String line : lines) {
@@ -74,7 +67,6 @@ public final class MessageUtil {
         }
     }
 
-    /** Sends a chat message with the configured prefix. Empty messages are not sent. */
     public void send(Audience audience, String key, TagResolver... placeholders) {
         String raw = raw(key);
         if (raw.isEmpty()) {
@@ -84,7 +76,6 @@ public final class MessageUtil {
         audience.sendMessage(prefix.append(MINI.deserialize(raw, placeholders)));
     }
 
-    /** Sends a chat line without the prefix (used for multi-line output such as help). */
     public void sendPlain(Audience audience, String key, TagResolver... placeholders) {
         audience.sendMessage(render(key, placeholders));
     }

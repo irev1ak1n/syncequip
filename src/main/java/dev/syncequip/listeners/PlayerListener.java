@@ -19,11 +19,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 
-/**
- * Keeps sequences and squads consistent with what players do: leaving, dying and changing worlds
- * remove a player from their sequence, and inventory edits are blocked for the fraction of a second
- * in which their equipment is actively changing.
- */
 public final class PlayerListener implements Listener {
 
     private final SyncEquipPlugin plugin;
@@ -51,7 +46,6 @@ public final class PlayerListener implements Listener {
                 RemovalReason.CHANGED_WORLD);
     }
 
-    // ------------------------------------------------------------------ inventory lock while equipping
 
     private boolean locked(Player player) {
         return plugin.sequenceService().isLocked(player.getUniqueId());
@@ -85,8 +79,8 @@ public final class PlayerListener implements Listener {
         }
     }
 
-    /** Stops right-click armor equipping from racing the sequence for the same slot. */
     @EventHandler(priority = EventPriority.LOW)
+    // Blocks right click armor equipping so it cannot race the sequence for the same equipment slot.
     public void onInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;

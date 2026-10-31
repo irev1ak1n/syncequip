@@ -5,9 +5,6 @@ import java.util.Optional;
 import org.bukkit.Material;
 import org.bukkit.inventory.EquipmentSlot;
 
-/**
- * One beat of the equipment sequence: which kind of item is equipped and into which slot.
- */
 public enum EquipmentStep {
     BOOTS(EquipmentSlot.FEET, "Boots", 0.1),
     LEGGINGS(EquipmentSlot.LEGS, "Leggings", 0.7),
@@ -33,15 +30,10 @@ public enum EquipmentStep {
         return displayName;
     }
 
-    /** Approximate height above the player's feet where this piece sits; used for particles. */
     public double bodyHeight() {
         return bodyHeight;
     }
 
-    /**
-     * Whether an item of this material belongs in this step. Only real armor pieces and shields
-     * match; carved pumpkins, mob heads and elytra are deliberately excluded.
-     */
     public boolean matches(Material material) {
         if (material == null || material.isAir()) {
             return false;

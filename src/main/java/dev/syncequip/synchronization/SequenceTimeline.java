@@ -4,13 +4,7 @@ import dev.syncequip.equipment.EquipmentStep;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Immutable description of when everything in a sequence happens, expressed purely in server ticks.
- *
- * <p>A countdown of {@code N} seconds emits COUNTDOWN events at offsets 0, 20, ..., 20(N-1); the
- * first equipment step follows at 20N and each further step {@code intervalTicks} later. A FINISH
- * event follows one interval after the last step.
- */
+/** All timing is in server ticks. Countdown beats come first, then one step per interval, then a finish event. */
 public final class SequenceTimeline {
 
     public static final int TICKS_PER_SECOND = 20;
@@ -52,7 +46,6 @@ public final class SequenceTimeline {
         return List.copyOf(list);
     }
 
-    /** Offset of the first equipment step, i.e. the length of the countdown in ticks. */
     public long firstStepOffset() {
         return (long) countdownSeconds * TICKS_PER_SECOND;
     }

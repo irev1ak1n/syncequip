@@ -15,7 +15,6 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
-/** Boots a MockBukkit server with SyncEquip loaded. */
 public abstract class PluginTestBase {
 
     protected static final EquipmentSlot[] SEQUENCE_SLOTS = {EquipmentSlot.FEET, EquipmentSlot.LEGS,
@@ -37,7 +36,6 @@ public abstract class PluginTestBase {
         MockBukkit.unmock();
     }
 
-    /** A player holding a sword with a full iron set and a shield in the main inventory. */
     protected PlayerMock playerWithKit(String name) {
         PlayerMock player = server.addPlayer(name);
         giveKit(player);
@@ -82,7 +80,6 @@ public abstract class PluginTestBase {
         return count;
     }
 
-    /** Total number of items the player owns, across storage, armor and offhand. */
     protected static int totalItems(PlayerMock player) {
         int total = 0;
         for (ItemStack item : player.getInventory().getContents()) {
@@ -93,7 +90,6 @@ public abstract class PluginTestBase {
         return total;
     }
 
-    /** Drains and returns every chat message the player received, as plain text. */
     protected static List<String> messages(PlayerMock player) {
         List<String> result = new ArrayList<>();
         Component next;
@@ -107,7 +103,6 @@ public abstract class PluginTestBase {
         return messages(player).stream().anyMatch(m -> m.contains(fragment));
     }
 
-    /** Writes a config value to disk and reloads, exactly like an admin editing config.yml. */
     protected void setConfig(String path, Object value) {
         plugin.getConfig().set(path, value);
         plugin.saveConfig();

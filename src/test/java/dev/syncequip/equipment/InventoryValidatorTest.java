@@ -25,7 +25,7 @@ class InventoryValidatorTest extends PluginTestBase {
     @Test
     void categorisesMissingAndOccupied() {
         PlayerMock player = playerWithKit("Steve");
-        player.getInventory().setItem(12, null); // no helmet in inventory
+        player.getInventory().setItem(12, null);
         player.getInventory().setItemInOffHand(new ItemStack(Material.TORCH));
 
         InventoryValidator.Report report = InventoryValidator.validate(player, ConfigManager.DEFAULT_ORDER, true);

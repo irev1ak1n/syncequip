@@ -24,7 +24,6 @@ import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-/** Handles {@code /syncequip} and all of its subcommands. */
 public final class SyncEquipCommand implements BasicCommand {
 
     public static final String PERMISSION_USE = "syncequip.use";
@@ -51,7 +50,6 @@ public final class SyncEquipCommand implements BasicCommand {
         return complete(source.getSender(), args);
     }
 
-    /** Entry point independent of Brigadier, so it can be unit-tested with any sender. */
     public void handle(CommandSender sender, String[] args) {
         MessageUtil messages = plugin.messages();
         if (args.length == 0) {
@@ -68,7 +66,6 @@ public final class SyncEquipCommand implements BasicCommand {
         }
     }
 
-    // ------------------------------------------------------------------ solo / settings / reload
 
     private void solo(CommandSender sender) {
         Player player = requirePlayer(sender);
@@ -118,7 +115,6 @@ public final class SyncEquipCommand implements BasicCommand {
         }
     }
 
-    // ------------------------------------------------------------------ squad
 
     private void squad(CommandSender sender, String[] args) {
         Player player = requirePlayer(sender);
@@ -258,7 +254,6 @@ public final class SyncEquipCommand implements BasicCommand {
         }
     }
 
-    // ------------------------------------------------------------------ help / completion
 
     private void sendHelp(CommandSender sender) {
         MessageUtil messages = plugin.messages();

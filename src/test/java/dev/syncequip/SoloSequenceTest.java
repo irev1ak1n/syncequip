@@ -14,10 +14,8 @@ import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
-/** End-to-end solo sequences on a mocked server, driven by the real scheduler task. */
 class SoloSequenceTest extends PluginTestBase {
 
-    /** Ticks the server one tick at a time and records the tick on which each slot was filled. */
     private Map<EquipmentSlot, Long> recordEquipTicks(PlayerMock player, int ticks) {
         Map<EquipmentSlot, Long> result = new EnumMap<>(EquipmentSlot.class);
         for (int i = 0; i < ticks; i++) {
@@ -93,7 +91,7 @@ class SoloSequenceTest extends PluginTestBase {
     @Test
     void missingItemAbortsBeforeAnythingMoves() {
         PlayerMock player = playerWithKit("Steve");
-        player.getInventory().setItem(12, null); // no helmet
+        player.getInventory().setItem(12, null);
         run(player, "solo");
         tick(20);
 
@@ -140,7 +138,7 @@ class SoloSequenceTest extends PluginTestBase {
     void cannotRunTwoSequencesAtOnce() {
         setConfig("solo.countdown-seconds", 2);
         PlayerMock player = playerWithKit("Steve");
-        player.setOp(true); // bypass the cooldown so only the "busy" check applies
+        player.setOp(true);
         run(player, "solo");
         tick(1);
         run(player, "solo");
@@ -154,13 +152,12 @@ class SoloSequenceTest extends PluginTestBase {
         PlayerMock player = playerWithKit("Steve");
         int before = totalItems(player);
         run(player, "solo");
-        tick(3); // boots + leggings on
+        tick(3);
         assertEquals(2, countEquipped(player));
 
-        // Another plugin moves the helmet away before its step.
         ItemStack helmet = player.getInventory().getItem(12);
         player.getInventory().setItem(12, null);
-        player.getInventory().setItem(35, new ItemStack(Material.DIRT)); // unrelated change
+        player.getInventory().setItem(35, new ItemStack(Material.DIRT));
         tick(20);
 
         assertEquals(3, countEquipped(player), "boots, leggings and chestplate stay on");
@@ -200,7 +197,7 @@ class SoloSequenceTest extends PluginTestBase {
         PlayerMock player = playerWithKit("Steve");
         int before = totalItems(player);
         run(player, "solo");
-        tick(5); // boots, leggings, chestplate
+        tick(5);
 
         server.getPluginManager().disablePlugin(plugin);
         tick(20);
