@@ -13,8 +13,8 @@ game does.
 
 If the host (the person running the server) doesn't own the game, they can still run the server and
 use the console, but they can't join as a player. In that case you need **two friends** to test
-squads, because squads need at least two players. The console can't run `/syncequip` (it is for
-players only), but it can `op` people, give items and read the debug log.
+squads, because squads need at least two players. The console can run `/syncequip help`, `settings` and `reload`,
+but `solo` and `squad` are for players only. It can also `op` people, give items and read the debug log.
 
 ## Host steps
 
@@ -40,6 +40,9 @@ players only), but it can `op` people, give items and read the debug log.
    ```
 
    Then type `stop` in the server console and start it again. (`/reload` is not safe for plugins.)
+
+A harmless `oshi ... Unable to locate English counter names` error may appear at startup on Windows. It comes from Minecraft's
+system report, not from SyncEquip, and can be ignored.
 
 Stop the server with `stop` in the console, not by closing the window, so the world saves.
 
