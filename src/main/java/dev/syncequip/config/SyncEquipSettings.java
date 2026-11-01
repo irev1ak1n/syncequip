@@ -1,6 +1,7 @@
 package dev.syncequip.config;
 
 import dev.syncequip.equipment.EquipmentStep;
+import dev.syncequip.equipment.Loadout;
 import dev.syncequip.equipment.MissingItemPolicy;
 import java.util.List;
 
@@ -18,10 +19,19 @@ public record SyncEquipSettings(
         Visuals visuals,
         Controls controls,
         Demo demo,
+        Loadout defaultLoadout,
+        boolean soloUseDefaultLoadout,
+        int unequipCountdownSeconds,
+        Pads pads,
         boolean debugLogTicks) {
 
     public SyncEquipSettings {
         order = List.copyOf(order);
+    }
+
+    /** Loadout used by solo sequences: the original armor and shield behaviour unless the config says otherwise. */
+    public Loadout soloLoadout() {
+        return soloUseDefaultLoadout ? defaultLoadout : Loadout.legacy(order);
     }
 
     public record Sounds(
@@ -38,7 +48,14 @@ public record SyncEquipSettings(
             boolean goSoundEnabled,
             String goSound,
             boolean completionSoundEnabled,
-            String completionSound) {
+            String completionSound,
+            String mainHandSound,
+            float mainHandVolume,
+            float mainHandPitch,
+            float unequipPitchMultiplier) {
+    }
+
+    public record Pads(boolean enabled, int noticeCooldownSeconds) {
     }
 
     public enum CountdownDisplay {

@@ -8,6 +8,7 @@ import dev.syncequip.demo.DemoManager;
 import dev.syncequip.equipment.SequenceService;
 import dev.syncequip.squad.Squad;
 import dev.syncequip.squad.SquadManager;
+import dev.syncequip.squad.SquadProfile;
 import dev.syncequip.squad.SquadSequenceController;
 import dev.syncequip.synchronization.RemovalReason;
 import dev.syncequip.util.MessageUtil;
@@ -33,10 +34,11 @@ public final class SyncEquipCommand implements BasicCommand {
     public static final String PERMISSION_RELOAD = "syncequip.reload";
     public static final String PERMISSION_DEMO = "syncequip.demo";
 
-    private static final List<String> ROOT = List.of("solo", "squad", "demo", "settings", "reload", "help");
+    private static final List<String> ROOT = List.of("solo", "unequip", "squad", "demo", "settings", "reload", "help");
     private static final List<String> DEMO = List.of("spawn", "start", "repeat", "stop", "reset", "clear", "speed");
-    private static final List<String> SQUAD = List.of("create", "invite", "join", "leave", "list", "start",
-            "cancel", "transfer");
+    private static final List<String> SQUAD = List.of("create", "invite", "join", "leave", "list", "info", "start",
+            "cancel", "unequip", "transfer", "speed", "pad", "loadout", "disband");
+    private static final List<String> SQUAD_CONFIG = List.of("info", "speed", "pad", "loadout", "disband");
 
     private final SyncEquipPlugin plugin;
 
@@ -62,6 +64,7 @@ public final class SyncEquipCommand implements BasicCommand {
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
             case "solo" -> solo(sender);
+            case "unequip" -> soloUnequip(sender);
             case "squad" -> squad(sender, args);
             case "demo" -> demo(sender, args);
             case "settings" -> settings(sender);
@@ -71,6 +74,14 @@ public final class SyncEquipCommand implements BasicCommand {
         }
     }
 
+
+    private void soloUnequip(CommandSender sender) {
+        Player player = requirePlayer(sender);
+        if (player == null || !requirePermission(player, PERMISSION_USE)) {
+            return;
+        }
+        plugin.sequenceService().startSoloUnequip(player);
+    }
 
     private void solo(CommandSender sender) {
         Player player = requirePlayer(sender);
@@ -89,6 +100,7 @@ public final class SyncEquipCommand implements BasicCommand {
         messages.sendPlain(sender, "settings.header");
         line(sender, "Interval", s.intervalTicks() + " ticks (~" + (s.intervalTicks() * 50) + " ms)");
         line(sender, "Order", SequenceService.describe(s.order()));
+        line(sender, "Squad loadout", s.defaultLoadout().describe(s.defaultLoadout().steps()));
         line(sender, "Require empty slots", String.valueOf(s.requireEmptySlots()));
         line(sender, "Missing item policy", s.missingItemPolicy().name());
         line(sender, "Solo countdown", s.soloCountdownSeconds() + " s");
@@ -212,12 +224,15 @@ public final class SyncEquipCommand implements BasicCommand {
             return;
         }
         switch (args[1].toLowerCase(Locale.ROOT)) {
-            case "create" -> squadCreate(player);
+            case "create" -> squadCreate(player, args);
             case "invite" -> withTarget(player, args, "invite", target -> squadInvite(player, target));
-            case "join" -> withTarget(player, args, "join", target -> squadJoin(player, target));
+            case "join" -> squadJoin(player, args);
             case "leave" -> squadLeave(player);
             case "list" -> squadList(player);
             case "start" -> plugin.squadController().start(player);
+            case "unequip" -> plugin.squadController().unequip(player);
+            case "info", "speed", "pad", "loadout", "disband" ->
+                    plugin.squadConfig().handle(player, args[1].toLowerCase(Locale.ROOT), args);
             case "cancel" -> plugin.squadController().cancel(player);
             case "transfer" -> withTarget(player, args, "transfer", target -> squadTransfer(player, target));
             default -> messages.send(player, "command.squad-usage");
@@ -237,12 +252,24 @@ public final class SyncEquipCommand implements BasicCommand {
         action.accept(target);
     }
 
-    private void squadCreate(Player player) {
-        SquadManager.Status status = plugin.squads().create(player.getUniqueId());
-        if (status == SquadManager.Status.OK) {
-            plugin.messages().send(player, "squad.created");
-        } else {
-            plugin.messages().send(player, "squad.already-in-squad");
+    private void squadCreate(Player player, String[] args) {
+        MessageUtil messages = plugin.messages();
+        String name = args.length > 2 ? args[2] : player.getName();
+        SquadManager.Status status = plugin.squads().create(player.getUniqueId(), name,
+                SquadSequenceController.isAdmin(player));
+        switch (status) {
+            case OK -> {
+                SquadProfile profile = plugin.squads().squadOf(player.getUniqueId()).orElseThrow().profile();
+                messages.send(player, "squad.created", ph("squad", profile.name()));
+                if (profile.persistable()) {
+                    messages.send(player, "squad.restored", ph("squad", profile.name()));
+                }
+            }
+            case ALREADY_IN_SQUAD -> messages.send(player, "squad.already-in-squad");
+            case NAME_INVALID -> messages.send(player, "squad.name-invalid");
+            case NAME_TAKEN -> messages.send(player, "squad.name-taken", ph("squad", name));
+            case NAME_RESERVED -> messages.send(player, "squad.name-reserved", ph("squad", name));
+            default -> messages.send(player, "command.failed");
         }
     }
 
@@ -270,18 +297,31 @@ public final class SyncEquipCommand implements BasicCommand {
         }
     }
 
-    private void squadJoin(Player player, Player leader) {
+    /** Joins by squad name or by the name of the player who leads it. Needs an invite. */
+    private void squadJoin(Player player, String[] args) {
         MessageUtil messages = plugin.messages();
-        SquadManager.Status status = plugin.squads().join(player.getUniqueId(), leader.getUniqueId(),
+        if (args.length < 3) {
+            messages.send(player, "command.missing-player", ph("sub", "join"));
+            return;
+        }
+        Squad squad = plugin.squads().squadByName(args[2]).orElse(null);
+        if (squad == null) {
+            Player leader = plugin.getServer().getPlayerExact(args[2]);
+            if (leader != null) {
+                squad = plugin.squads().squadOf(leader.getUniqueId())
+                        .filter(s -> s.isLeader(leader.getUniqueId())).orElse(null);
+            }
+        }
+        if (squad == null) {
+            messages.send(player, "squad.no-such-squad", ph("player", args[2]));
+            return;
+        }
+        SquadManager.Status status = plugin.squads().joinInvited(player.getUniqueId(), squad,
                 plugin.settings().maxSquadSize());
         switch (status) {
-            case OK -> {
-                Squad squad = plugin.squads().squadOf(player.getUniqueId()).orElseThrow();
-                broadcast(squad, "squad.member-joined", player.getName());
-            }
+            case OK -> broadcast(squad, "squad.member-joined", player.getName());
             case ALREADY_IN_SQUAD -> messages.send(player, "squad.already-in-squad");
-            case NO_SUCH_SQUAD -> messages.send(player, "squad.no-such-squad", ph("player", leader.getName()));
-            case NOT_INVITED -> messages.send(player, "squad.not-invited", ph("player", leader.getName()));
+            case NOT_INVITED -> messages.send(player, "squad.not-invited", ph("player", args[2]));
             case SQUAD_FULL -> messages.send(player, "squad.full", ph("max", plugin.settings().maxSquadSize()));
             default -> messages.send(player, "command.failed");
         }
@@ -371,9 +411,16 @@ public final class SyncEquipCommand implements BasicCommand {
         if (args.length == 2) {
             return filter(SQUAD.stream(), args[1]);
         }
+        String sub = args[1].toLowerCase(Locale.ROOT);
+        if (SQUAD_CONFIG.contains(sub)) {
+            return plugin.squadConfig().complete(sender, args);
+        }
         if (args.length == 3) {
-            String sub = args[1].toLowerCase(Locale.ROOT);
-            if (sub.equals("invite") || sub.equals("join") || sub.equals("transfer")) {
+            if (sub.equals("join")) {
+                return filter(Stream.concat(plugin.squads().squads().stream().map(Squad::name),
+                        onlineNames(sender, sub)), args[2]);
+            }
+            if (sub.equals("invite") || sub.equals("transfer")) {
                 return filter(onlineNames(sender, sub), args[2]);
             }
         }

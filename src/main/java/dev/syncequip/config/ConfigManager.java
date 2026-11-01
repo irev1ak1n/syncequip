@@ -5,9 +5,11 @@ import dev.syncequip.config.SyncEquipSettings.CountdownDisplay;
 import dev.syncequip.config.SyncEquipSettings.Demo;
 import dev.syncequip.config.SyncEquipSettings.DemoFacing;
 import dev.syncequip.config.SyncEquipSettings.HotkeyAction;
+import dev.syncequip.config.SyncEquipSettings.Pads;
 import dev.syncequip.config.SyncEquipSettings.Sounds;
 import dev.syncequip.config.SyncEquipSettings.Visuals;
 import dev.syncequip.equipment.EquipmentStep;
+import dev.syncequip.equipment.Loadout;
 import dev.syncequip.equipment.MissingItemPolicy;
 import dev.syncequip.synchronization.SequenceTimeline;
 import java.util.ArrayList;
@@ -88,7 +90,11 @@ public final class ConfigManager {
                 config.getBoolean("sounds.go.enabled", false),
                 soundKey(config, "sounds.go.sound", "minecraft:block.note_block.snare", warnings),
                 config.getBoolean("sounds.completion.enabled", false),
-                soundKey(config, "sounds.completion.sound", "minecraft:item.armor.equip_netherite", warnings));
+                soundKey(config, "sounds.completion.sound", "minecraft:item.armor.equip_netherite", warnings),
+                soundKey(config, "sounds.mainhand.sound", "minecraft:item.armor.equip_chain", warnings),
+                floatInRange(config, "sounds.mainhand.volume", 0.8f, 0.0f, 4.0f, warnings),
+                floatInRange(config, "sounds.mainhand.pitch", 1.4f, 0.5f, 2.0f, warnings),
+                floatInRange(config, "sounds.unequip-pitch-multiplier", 0.8f, 0.25f, 2.0f, warnings));
 
         Visuals visuals = new Visuals(
                 config.getBoolean("visuals.particles-enabled", false),
@@ -111,8 +117,15 @@ public final class ConfigManager {
                 floatInRange(config, "demo.distance", 4.0f, 2.0f, 20.0f, warnings),
                 parseEnum(config, "demo.facing", DemoFacing.class, DemoFacing.TOWARD_PLAYER, warnings));
 
+        Loadout defaultLoadout = Loadout.load(config.getConfigurationSection("loadout.default"),
+                Loadout.standard().withOrder(order), "loadout.default", warnings);
+        Pads pads = new Pads(config.getBoolean("pads.enabled", true),
+                intInRange(config, "pads.notice-cooldown-seconds", 5, 0, 600, warnings));
+
         return new SyncEquipSettings(interval, order, requireEmpty, policy, lockInventory, soloCountdown,
-                squadCountdown, maxSquad, inviteExpiry, sounds, visuals, controls, demo,
+                squadCountdown, maxSquad, inviteExpiry, sounds, visuals, controls, demo, defaultLoadout,
+                config.getBoolean("loadout.solo-uses-default", false),
+                intInRange(config, "synchronization.unequip-countdown-seconds", 3, 0, 10, warnings), pads,
                 config.getBoolean("debug.log-sequence-ticks", false));
     }
 
@@ -133,7 +146,7 @@ public final class ConfigManager {
             EquipmentStep step = EquipmentStep.parse(raw).orElse(null);
             if (step == null) {
                 warnings.add("equipment.order: unknown step '" + raw + "' ignored (valid: BOOTS, LEGGINGS, "
-                        + "CHESTPLATE, HELMET, SHIELD)");
+                        + "CHESTPLATE, HELMET, SHIELD or OFFHAND, MAIN_HAND)");
             } else if (!seen.add(step)) {
                 warnings.add("equipment.order: duplicate step " + step + " ignored");
             } else {

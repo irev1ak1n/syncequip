@@ -9,8 +9,9 @@ equipment:
   # The default of 2 puts the five steps at offsets 0, 2, 4, 6 and 8 ticks (~0.4 s).
   interval-ticks: 2
 
-  # Order of the steps. Any subset of BOOTS, LEGGINGS, CHESTPLATE, HELMET, SHIELD,
-  # each at most once. Unknown or duplicate entries are ignored with a warning.
+  # Order of the steps: BOOTS, LEGGINGS, CHESTPLATE, HELMET, SHIELD (the offhand) and MAIN_HAND.
+  # Solo sequences use exactly the steps listed here. Squads use the order, then add any other slot their
+  # loadout needs at the end. Unknown or duplicate entries are ignored with a warning.
   order:
     - BOOTS
     - LEGGINGS
@@ -44,6 +45,8 @@ synchronization:
   max-squad-size: 30
   # How long a squad invite stays valid.
   invite-expiry-seconds: 60
+  # Countdown before a squad unequip (0-10 seconds).
+  unequip-countdown-seconds: 3
 
 sounds:
   # true:  SyncEquip equips silently and plays exactly one sound per step itself.
@@ -72,6 +75,13 @@ sounds:
   completion:
     enabled: false
     sound: minecraft:item.armor.equip_netherite
+  # Sound for the main hand step (a sword being drawn).
+  mainhand:
+    sound: minecraft:item.armor.equip_chain
+    volume: 0.8
+    pitch: 1.4
+  # Taking things off plays the same sounds at this multiple of the pitch (lower sounds like removing).
+  unequip-pitch-multiplier: 0.8
 
 visuals:
   # A few small crit particles at the height of each piece as it is equipped.
@@ -89,6 +99,31 @@ controls:
   sneak-swap-action: SOLO
   # Seconds between sequences per player (applies to every participant when a sequence starts).
   cooldown-seconds: 3
+
+# What squad members must have, by default. Each squad can override this with /syncequip squad loadout.
+# Values: none (slot not used), any, any_sword and any_axe (main hand only), an item name such as
+# netherite_sword or totem_of_undying, or for armor a material alone such as netherite.
+loadout:
+  default:
+    mainhand: any_sword
+    offhand: shield
+    helmet: any
+    chestplate: any
+    leggings: any
+    boots: any
+    # Slots listed here are skipped quietly when the player lacks them (for example: [mainhand]).
+    optional: []
+  # false: solo sequences keep the original armor and shield behaviour.
+  # true: solo sequences use the loadout above too (sword included).
+  solo-uses-default: false
+
+pads:
+  # Joining blocks: a leader stands on a block and runs /syncequip squad pad set. Anyone who steps on
+  # that exact block joins the squad.
+  enabled: true
+  # A player who steps on a pad they cannot use (full squad, already in another squad) hears about it at most
+  # this often.
+  notice-cooldown-seconds: 5
 
 debug:
   # Log the scheduled and actual server tick of every step for every player.

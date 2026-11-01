@@ -65,6 +65,7 @@ public final class DemoManager implements SequenceCallbacks {
         GEAR.put(EquipmentStep.CHESTPLATE, Material.NETHERITE_CHESTPLATE);
         GEAR.put(EquipmentStep.HELMET, Material.NETHERITE_HELMET);
         GEAR.put(EquipmentStep.SHIELD, Material.SHIELD);
+        GEAR.put(EquipmentStep.MAIN_HAND, Material.NETHERITE_SWORD);
     }
 
     /** Creates one husk. Replaceable so tests can run without a real server. */

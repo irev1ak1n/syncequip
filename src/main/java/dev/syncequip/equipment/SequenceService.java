@@ -31,9 +31,26 @@ import org.bukkit.Particle;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 
+/**
+ * Starts equip and unequip sequences and executes them step by step. Solo and squad mode share this one
+ * implementation: a solo sequence is just a sequence with one participant.
+ */
 public final class SequenceService implements SequenceCallbacks {
 
     public static final String BYPASS_COOLDOWN = "syncequip.bypass.cooldown";
+
+    public enum Action {
+        EQUIP,
+        UNEQUIP
+    }
+
+    /** Everything a running sequence needs to remember, fixed when it starts so a reload cannot change it. */
+    private record Context(SyncEquipSettings settings, Loadout loadout, Action action, boolean acceptExisting) {
+
+        String key(String base) {
+            return (action == Action.UNEQUIP ? "unequip." : "sequence.") + base;
+        }
+    }
 
     private final Server server;
     private final Logger logger;
@@ -44,7 +61,7 @@ public final class SequenceService implements SequenceCallbacks {
     private final MessageUtil messages;
     private final CooldownTracker cooldowns;
     private final LongSupplier currentTick;
-    private final Map<Long, SyncEquipSettings> sequenceSettings = new HashMap<>();
+    private final Map<Long, Context> contexts = new HashMap<>();
 
     public SequenceService(Server server, Logger logger, TickSequenceScheduler scheduler,
                            Supplier<SyncEquipSettings> settings, EquipmentManager equipmentManager,
@@ -61,8 +78,57 @@ public final class SequenceService implements SequenceCallbacks {
         this.currentTick = currentTick;
     }
 
+    // ------------------------------------------------------------------ readiness
 
+    /** Checks whether a player could equip the original solo kit right now. */
     public Optional<Component> checkReady(Player player, SyncEquipSettings config) {
+        return checkReady(player, config, config.soloLoadout(), config.soloUseDefaultLoadout(), false);
+    }
+
+    /**
+     * Checks whether a player could take part in an equip sequence for this loadout.
+     *
+     * @param requireWork if true, a player who has nothing left to equip is told so instead of starting a no-op
+     * @return a short rendered reason if they cannot, or empty if they are ready
+     */
+    public Optional<Component> checkReady(Player player, SyncEquipSettings config, Loadout loadout,
+                                          boolean acceptExisting, boolean requireWork) {
+        Optional<Component> basic = checkBasics(player);
+        if (basic.isPresent()) {
+            return basic;
+        }
+        InventoryValidator.Report report = InventoryValidator.validate(player, loadout, config.requireEmptySlots(),
+                acceptExisting);
+        if (report.acceptableFor(config.missingItemPolicy())) {
+            if (requireWork && report.available().isEmpty()) {
+                return Optional.of(messages.render("problem.nothing"));
+            }
+            return Optional.empty();
+        }
+        if (report.available().isEmpty() && report.satisfied().isEmpty()
+                && config.missingItemPolicy() == MissingItemPolicy.SKIP
+                && report.missing().isEmpty() && report.occupied().isEmpty()) {
+            return Optional.of(messages.render("problem.nothing"));
+        }
+        List<Component> parts = new ArrayList<>();
+        if (!report.missing().isEmpty()) {
+            parts.add(messages.render("problem.missing", ph("pieces", loadout.describe(report.missing()))));
+        }
+        List<EquipmentStep> wornSlots = report.occupied().stream().filter(s -> !s.isHand()).toList();
+        List<EquipmentStep> busyHands = report.occupied().stream().filter(EquipmentStep::isHand).toList();
+        if (!wornSlots.isEmpty()) {
+            parts.add(messages.render("problem.occupied", ph("pieces", loadout.describe(wornSlots))));
+        }
+        if (!busyHands.isEmpty()) {
+            parts.add(messages.render("problem.occupied-hand", ph("pieces", loadout.describe(busyHands))));
+        }
+        if (parts.isEmpty()) {
+            parts.add(messages.render("problem.nothing"));
+        }
+        return Optional.of(Component.join(JoinConfiguration.commas(true), parts));
+    }
+
+    private Optional<Component> checkBasics(Player player) {
         if (scheduler.isBusy(player.getUniqueId())) {
             return Optional.of(messages.render("problem.busy"));
         }
@@ -73,51 +139,80 @@ public final class SequenceService implements SequenceCallbacks {
         if (!InventoryValidator.canEquip(player)) {
             return Optional.of(messages.render("problem.invalid"));
         }
-        InventoryValidator.Report report = InventoryValidator.validate(player, config.order(),
-                config.requireEmptySlots());
-        if (report.acceptableFor(config.missingItemPolicy())) {
-            return Optional.empty();
-        }
-        if (report.noneAvailable() && config.missingItemPolicy() == MissingItemPolicy.SKIP) {
-            return Optional.of(messages.render("problem.nothing"));
-        }
-        List<Component> parts = new ArrayList<>();
-        if (!report.missing().isEmpty()) {
-            parts.add(messages.render("problem.missing", ph("pieces", describe(report.missing()))));
-        }
-        if (!report.occupied().isEmpty()) {
-            parts.add(messages.render("problem.occupied", ph("pieces", describe(report.occupied()))));
-        }
-        return Optional.of(Component.join(JoinConfiguration.commas(true), parts));
+        return Optional.empty();
     }
+
+    /** Result of {@link #checkUnequip}: a reason the player cannot take part, or a note that there is nothing to remove. */
+    public record UnequipCheck(Component problem, boolean nothingToRemove) {
+
+        public boolean ready() {
+            return problem == null && !nothingToRemove;
+        }
+    }
+
+    /** Checks whether a player can take the loadout off, without changing anything. */
+    public UnequipCheck checkUnequip(Player player, Loadout loadout) {
+        Optional<Component> basic = checkBasics(player);
+        if (basic.isPresent()) {
+            return new UnequipCheck(basic.get(), false);
+        }
+        InventoryValidator.UnequipReport report = InventoryValidator.unequipReport(player, loadout);
+        if (!report.enoughRoom()) {
+            return new UnequipCheck(messages.render("problem.no-room"), false);
+        }
+        return new UnequipCheck(null, report.removable().isEmpty());
+    }
+
+    // ------------------------------------------------------------------ starting
 
     public boolean startSolo(Player player) {
         SyncEquipSettings config = settings.get();
-        Optional<Component> problem = checkReady(player, config);
+        Optional<Component> problem = checkReady(player, config, config.soloLoadout(), config.soloUseDefaultLoadout(), true);
         if (problem.isPresent()) {
             messages.send(player, "solo.cannot-start", ph("reason", problem.get()));
             return false;
         }
-        startGroup(SyncSequence.Mode.SOLO, null, player, List.of(player), config.soloCountdownSeconds(), config);
+        startGroup(SyncSequence.Mode.SOLO, null, player, List.of(player), config.soloCountdownSeconds(), config,
+                config.soloLoadout(), Action.EQUIP, config.intervalTicks(), config.soloUseDefaultLoadout());
         return true;
     }
 
+    /** Takes off the solo loadout one piece at a time, in reverse order. */
+    public boolean startSoloUnequip(Player player) {
+        SyncEquipSettings config = settings.get();
+        UnequipCheck check = checkUnequip(player, config.soloLoadout());
+        if (!check.ready()) {
+            Component reason = check.problem() != null ? check.problem() : messages.render("problem.nothing-to-remove");
+            messages.send(player, "unequip.cannot-start", ph("reason", reason));
+            return false;
+        }
+        startGroup(SyncSequence.Mode.SOLO, null, player, List.of(player), config.soloCountdownSeconds(), config,
+                config.soloLoadout(), Action.UNEQUIP, config.intervalTicks(), true);
+        return true;
+    }
+
+    /**
+     * Starts a sequence for already-validated players on one shared timeline. All participants get the same start
+     * tick, so each step lands on the same server tick for every one of them.
+     */
     public SyncSequence startGroup(SyncSequence.Mode mode, UUID squadId, Player initiator, List<Player> players,
-                                   int countdownSeconds, SyncEquipSettings config) {
-        SequenceTimeline timeline = new SequenceTimeline(countdownSeconds, config.intervalTicks(), config.order());
+                                   int countdownSeconds, SyncEquipSettings config, Loadout loadout, Action action,
+                                   int intervalTicks, boolean acceptExisting) {
+        List<EquipmentStep> steps = action == Action.EQUIP ? loadout.steps() : loadout.unequipSteps();
+        SequenceTimeline timeline = new SequenceTimeline(countdownSeconds, intervalTicks, steps);
         // Every participant shares this one start tick, which is why each step lands on the same server tick for all of them.
         long startTick = currentTick.getAsLong() + 1;
         List<UUID> ids = players.stream().map(Player::getUniqueId).toList();
         SyncSequence sequence = scheduler.schedule(mode, squadId, initiator.getUniqueId(), ids, timeline,
                 startTick, this);
-        sequenceSettings.put(sequence.id(), config);
+        contexts.put(sequence.id(), new Context(config, loadout, action, acceptExisting));
         for (Player player : players) {
             cooldowns.start(player.getUniqueId(), config.controls().cooldownSeconds());
         }
         if (config.debugLogTicks()) {
             logger.info(String.format(Locale.ROOT,
-                    "[debug] sequence #%d (%s) scheduled: participants=%d startTick=%d firstStepTick=%d interval=%d",
-                    sequence.id(), mode, ids.size(), startTick, startTick + timeline.firstStepOffset(),
+                    "[debug] sequence #%d (%s %s) scheduled: participants=%d startTick=%d firstStepTick=%d interval=%d",
+                    sequence.id(), mode, action, ids.size(), startTick, startTick + timeline.firstStepOffset(),
                     timeline.intervalTicks()));
         }
         return sequence;
@@ -126,7 +221,7 @@ public final class SequenceService implements SequenceCallbacks {
     public boolean isLocked(UUID player) {
         return scheduler.findByParticipant(player)
                 .filter(s -> s.state() == SyncSequence.State.RUNNING)
-                .map(s -> settingsFor(s).lockInventoryDuringSequence())
+                .map(s -> contextFor(s).settings().lockInventoryDuringSequence())
                 .orElse(false);
     }
 
@@ -134,10 +229,17 @@ public final class SequenceService implements SequenceCallbacks {
         return scheduler;
     }
 
+    /** What a running sequence is doing, or empty if the sequence is unknown. */
+    public Optional<Action> actionOf(SyncSequence sequence) {
+        Context ctx = contexts.get(sequence.id());
+        return ctx == null ? Optional.empty() : Optional.of(ctx.action());
+    }
+
+    // ------------------------------------------------------------------ callbacks
 
     @Override
     public void onCountdown(SyncSequence sequence, int secondsRemaining, long tick) {
-        SyncEquipSettings config = settingsFor(sequence);
+        SyncEquipSettings config = contextFor(sequence).settings();
         for (Player player : onlineParticipants(sequence)) {
             switch (config.visuals().countdownDisplay()) {
                 case TITLE -> messages.title(player, "sequence.countdown-title", "sequence.countdown-subtitle",
@@ -155,7 +257,8 @@ public final class SequenceService implements SequenceCallbacks {
 
     @Override
     public void onBeforeFirstStep(SyncSequence sequence, long tick) {
-        SyncEquipSettings config = settingsFor(sequence);
+        Context ctx = contextFor(sequence);
+        SyncEquipSettings config = ctx.settings();
         // Inventories can change during the countdown, so everyone is checked again just before the first item moves.
         for (UUID id : List.copyOf(sequence.participants())) {
             Player player = server.getPlayer(id);
@@ -167,10 +270,14 @@ public final class SequenceService implements SequenceCallbacks {
                 sequence.removeParticipant(id, RemovalReason.INVALID_STATE);
                 continue;
             }
-            InventoryValidator.Report report = InventoryValidator.validate(player, config.order(),
-                    config.requireEmptySlots());
-            if (!report.acceptableFor(config.missingItemPolicy())) {
-                sequence.removeParticipant(id, RemovalReason.ITEM_UNAVAILABLE);
+            if (ctx.action() == Action.EQUIP) {
+                InventoryValidator.Report report = InventoryValidator.validate(player, ctx.loadout(),
+                        config.requireEmptySlots(), ctx.acceptExisting());
+                if (!report.acceptableFor(config.missingItemPolicy())) {
+                    sequence.removeParticipant(id, RemovalReason.ITEM_UNAVAILABLE);
+                }
+            } else if (!InventoryValidator.unequipReport(player, ctx.loadout()).enoughRoom()) {
+                sequence.removeParticipant(id, RemovalReason.NO_INVENTORY_SPACE);
             }
         }
         if (sequence.isFinished()) {
@@ -190,62 +297,91 @@ public final class SequenceService implements SequenceCallbacks {
     @Override
     public StepOutcome executeStep(SyncSequence sequence, UUID participant, EquipmentStep step, int stepIndex,
                                    long scheduledTick, long actualTick) {
-        SyncEquipSettings config = settingsFor(sequence);
+        Context ctx = contextFor(sequence);
+        SyncEquipSettings config = ctx.settings();
         Player player = server.getPlayer(participant);
         if (player == null) {
             sequence.removeParticipant(participant, RemovalReason.DISCONNECTED);
             return StepOutcome.SKIPPED;
         }
-        // Equipping is silent when custom sounds are on, so each step plays exactly one sound and never two.
-        EquipmentManager.Result result = equipmentManager.equip(player, step, config.requireEmptySlots(),
-                config.sounds().enabled());
-        StepOutcome outcome = switch (result.status()) {
-            case EQUIPPED -> StepOutcome.EQUIPPED;
-            case INVALID_PLAYER -> {
-                sequence.removeParticipant(participant, RemovalReason.INVALID_STATE);
-                yield StepOutcome.SKIPPED;
+        SlotRequirement requirement = ctx.loadout().requirement(step);
+        StepOutcome outcome;
+        String result;
+        if (ctx.action() == Action.EQUIP) {
+            // Equipping is silent when custom sounds are on, so each step plays exactly one sound and never two.
+            EquipmentManager.Result moved = equipmentManager.equip(player, step, requirement,
+                    config.requireEmptySlots(), config.sounds().enabled(), ctx.acceptExisting());
+            result = moved.status().name();
+            outcome = switch (moved.status()) {
+                case EQUIPPED, ALREADY -> StepOutcome.EQUIPPED;
+                case INVALID_PLAYER -> {
+                    sequence.removeParticipant(participant, RemovalReason.INVALID_STATE);
+                    yield StepOutcome.SKIPPED;
+                }
+                case MISSING, OCCUPIED -> !requirement.optional() && config.missingItemPolicy() == MissingItemPolicy.ABORT
+                        ? StepOutcome.ABORTED : StepOutcome.SKIPPED;
+            };
+            if (moved.equipped()) {
+                sounds.playStep(player, step, moved.item().getType(), config.sounds());
+                if (config.visuals().particlesEnabled()) {
+                    spawnParticles(player, step);
+                }
             }
-            case MISSING, OCCUPIED -> config.missingItemPolicy() == MissingItemPolicy.ABORT
-                    ? StepOutcome.ABORTED : StepOutcome.SKIPPED;
-        };
-        if (result.equipped()) {
-            sounds.playStep(player, step, result.item().getType(), config.sounds());
-            if (config.visuals().particlesEnabled()) {
-                spawnParticles(player, step);
+        } else {
+            EquipmentManager.UnequipResult removed = equipmentManager.unequip(player, step, requirement,
+                    config.sounds().enabled());
+            result = removed.status().name();
+            outcome = switch (removed.status()) {
+                case REMOVED -> StepOutcome.EQUIPPED;
+                case NOTHING -> StepOutcome.SKIPPED;
+                case NO_ROOM -> {
+                    sequence.removeParticipant(participant, RemovalReason.NO_INVENTORY_SPACE);
+                    yield StepOutcome.SKIPPED;
+                }
+                case INVALID_PLAYER -> {
+                    sequence.removeParticipant(participant, RemovalReason.INVALID_STATE);
+                    yield StepOutcome.SKIPPED;
+                }
+            };
+            if (removed.removed()) {
+                sounds.playStep(player.getLocation(), step, removed.item().getType(), config.sounds(),
+                        config.sounds().unequipPitchMultiplier());
             }
         }
         if (config.debugLogTicks()) {
             logger.info(String.format(Locale.ROOT,
                     "[debug] sequence #%d step %d/%d %-10s player=%-16s scheduled=%d actual=%d drift=%d result=%s",
                     sequence.id(), stepIndex + 1, sequence.timeline().steps().size(), step, player.getName(),
-                    scheduledTick, actualTick, actualTick - scheduledTick, result.status()));
+                    scheduledTick, actualTick, actualTick - scheduledTick, result));
         }
         return outcome;
     }
 
     @Override
     public void afterStep(SyncSequence sequence, EquipmentStep step, int stepIndex, long tick) {
-        SyncEquipSettings config = settingsFor(sequence);
-        if (!config.visuals().actionbarEnabled()) {
+        Context ctx = contextFor(sequence);
+        if (!ctx.settings().visuals().actionbarEnabled()) {
             return;
         }
         int total = sequence.timeline().steps().size();
         String bar = "▰".repeat(stepIndex + 1) + "▱".repeat(total - stepIndex - 1);
+        String piece = ctx.loadout().label(step);
         for (Player player : onlineParticipants(sequence)) {
-            messages.actionBar(player, "sequence.progress-actionbar", ph("bar", bar), ph("piece", step.displayName()));
+            messages.actionBar(player, "sequence.progress-actionbar", ph("bar", bar), ph("piece", piece));
         }
     }
 
     @Override
     public void onParticipantRemoved(SyncSequence sequence, UUID participant, RemovalReason reason,
                                      int equippedCount) {
+        Context ctx = contextFor(sequence);
         Player player = server.getPlayer(participant);
         Component reasonText = messages.render("reason." + reason.name().toLowerCase(Locale.ROOT));
         if (player != null && reason != RemovalReason.DISCONNECTED) {
             if (equippedCount == 0) {
-                messages.send(player, "sequence.removed-before-start", ph("reason", reasonText));
+                messages.send(player, ctx.key("removed-before-start"), ph("reason", reasonText));
             } else {
-                messages.send(player, "sequence.interrupted", ph("reason", reasonText),
+                messages.send(player, ctx.key("interrupted"), ph("reason", reasonText),
                         ph("count", equippedCount), ph("total", sequence.timeline().steps().size()));
             }
         }
@@ -260,18 +396,19 @@ public final class SequenceService implements SequenceCallbacks {
 
     @Override
     public void onFinished(SyncSequence sequence, FinishReason reason) {
-        SyncEquipSettings config = settingsFor(sequence);
+        Context ctx = contextFor(sequence);
+        SyncEquipSettings config = ctx.settings();
         int total = sequence.timeline().steps().size();
         for (Player player : onlineParticipants(sequence)) {
             int count = sequence.equippedCount(player.getUniqueId());
             switch (reason) {
                 case COMPLETED -> {
                     if (config.visuals().actionbarEnabled()) {
-                        messages.actionBar(player, "sequence.completed-actionbar", ph("count", count),
+                        messages.actionBar(player, ctx.key("completed-actionbar"), ph("count", count),
                                 ph("total", total));
                     }
                     if (count < total) {
-                        messages.send(player, "sequence.completed-partial", ph("count", count), ph("total", total));
+                        messages.send(player, ctx.key("completed-partial"), ph("count", count), ph("total", total));
                     }
                     if (config.sounds().completionSoundEnabled()) {
                         sounds.playCue(player, config.sounds().completionSound(), 0.6f, 1.4f);
@@ -281,11 +418,11 @@ public final class SequenceService implements SequenceCallbacks {
                     if (sequence.timeline().countdownSeconds() > 0) {
                         player.clearTitle();
                     }
-                    String key = reason == FinishReason.SHUTDOWN ? "sequence.shutdown" : "sequence.cancelled";
+                    String base = reason == FinishReason.SHUTDOWN ? "shutdown" : "cancelled";
                     if (count == 0) {
-                        messages.send(player, key + "-before-start");
+                        messages.send(player, ctx.key(base + "-before-start"));
                     } else {
-                        messages.send(player, key + "-midway", ph("count", count), ph("total", total));
+                        messages.send(player, ctx.key(base + "-midway"), ph("count", count), ph("total", total));
                     }
                 }
                 case NO_PARTICIPANTS -> {
@@ -296,13 +433,18 @@ public final class SequenceService implements SequenceCallbacks {
             logger.info(String.format(Locale.ROOT, "[debug] sequence #%d finished: %s (drift=%d)",
                     sequence.id(), reason, sequence.drift()));
         }
-        sequenceSettings.remove(sequence.id());
+        contexts.remove(sequence.id());
     }
 
+    // ------------------------------------------------------------------ helpers
 
-    private SyncEquipSettings settingsFor(SyncSequence sequence) {
-        SyncEquipSettings config = sequenceSettings.get(sequence.id());
-        return config != null ? config : settings.get();
+    private Context contextFor(SyncSequence sequence) {
+        Context ctx = contexts.get(sequence.id());
+        if (ctx != null) {
+            return ctx;
+        }
+        SyncEquipSettings config = settings.get();
+        return new Context(config, config.soloLoadout(), Action.EQUIP, false);
     }
 
     private List<Player> onlineParticipants(SyncSequence sequence) {

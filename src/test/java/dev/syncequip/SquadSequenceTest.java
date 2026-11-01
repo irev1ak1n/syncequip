@@ -104,7 +104,7 @@ class SquadSequenceTest extends PluginTestBase {
             plugin.getLogger().removeHandler(handler);
         }
 
-        Pattern line = Pattern.compile("step (\\d)/5 (\\w+)\\s+player=(\\S+)\\s+scheduled=(\\d+) actual=(\\d+) drift=0 result=EQUIPPED");
+        Pattern line = Pattern.compile("step (\\d)/6 (\\w+)\\s+player=(\\S+)\\s+scheduled=(\\d+) actual=(\\d+) drift=0 result=(?:EQUIPPED|ALREADY)");
         Map<String, Set<String>> actualTicksPerStep = new LinkedHashMap<>();
         int lines = 0;
         for (String message : log) {
@@ -115,8 +115,8 @@ class SquadSequenceTest extends PluginTestBase {
                 actualTicksPerStep.computeIfAbsent(m.group(2), k -> new HashSet<>()).add(m.group(5));
             }
         }
-        assertEquals(4 * 5, lines, "one debug line per player per step");
-        assertEquals(5, actualTicksPerStep.size());
+        assertEquals(4 * 6, lines, "one debug line per player per step");
+        assertEquals(6, actualTicksPerStep.size());
         actualTicksPerStep.forEach((step, ticks) -> assertEquals(1, ticks.size(), step + " on a single tick"));
     }
 

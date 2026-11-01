@@ -15,6 +15,9 @@ permissions:
   syncequip.squad:
     description: Create, join and manage squads.
     default: true
+  syncequip.squad.manage:
+    description: Change the speed, loadout and joining block of a squad you lead.
+    default: true
   syncequip.squad.start:
     description: Start and cancel the sequence of a squad you lead.
     default: true
@@ -28,7 +31,7 @@ permissions:
     description: Ignore the sequence cooldown.
     default: op
   syncequip.admin:
-    description: Start or cancel the sequence of any squad you are in, plus reload and cooldown bypass.
+    description: Configure and run any squad, plus reload and cooldown bypass.
     default: op
     children:
       syncequip.reload: true

@@ -15,6 +15,11 @@ public final class InventoryValidator {
     }
 
     public static int findSourceSlot(PlayerInventory inventory, EquipmentStep step) {
+        return findSourceSlot(inventory, step, SlotRequirement.ANY);
+    }
+
+    /** First storage slot holding an item this requirement accepts. The slot the player is holding is never used. */
+    public static int findSourceSlot(PlayerInventory inventory, EquipmentStep step, SlotRequirement requirement) {
         int held = inventory.getHeldItemSlot();
         for (int slot = 0; slot < STORAGE_SLOTS; slot++) {
             // The held slot is skipped so the weapon in the player's main hand always stays where it is.
@@ -22,16 +27,23 @@ public final class InventoryValidator {
                 continue;
             }
             ItemStack item = inventory.getItem(slot);
-            if (item != null && !item.isEmpty() && step.matches(item.getType())) {
+            if (item != null && !item.isEmpty() && requirement.matches(step, item.getType())) {
                 return slot;
             }
         }
         return -1;
     }
 
+    /** What is in the slot this step fills right now, or {@code null} if it is empty. */
+    public static ItemStack current(PlayerInventory inventory, EquipmentStep step) {
+        ItemStack item = step == EquipmentStep.MAIN_HAND
+                ? inventory.getItem(inventory.getHeldItemSlot())
+                : inventory.getItem(step.slot());
+        return item == null || item.isEmpty() ? null : item;
+    }
+
     public static boolean isDestinationOccupied(PlayerInventory inventory, EquipmentStep step) {
-        ItemStack current = inventory.getItem(step.slot());
-        return current != null && !current.isEmpty();
+        return current(inventory, step) != null;
     }
 
     public static boolean canEquip(Player player) {
@@ -40,28 +52,50 @@ public final class InventoryValidator {
     }
 
     public static Report validate(Player player, List<EquipmentStep> order, boolean requireEmptySlots) {
+        return validate(player, Loadout.legacy(order), requireEmptySlots, false);
+    }
+
+    /**
+     * Checks every slot of the loadout without changing anything.
+     *
+     * @param acceptExisting if true, an item already in the right slot that the loadout accepts counts as done
+     */
+    public static Report validate(Player player, Loadout loadout, boolean requireEmptySlots, boolean acceptExisting) {
         PlayerInventory inventory = player.getInventory();
         List<EquipmentStep> available = new ArrayList<>();
         List<EquipmentStep> missing = new ArrayList<>();
         List<EquipmentStep> occupied = new ArrayList<>();
-        for (EquipmentStep step : order) {
-            if (requireEmptySlots && isDestinationOccupied(inventory, step)) {
-                occupied.add(step);
-            } else if (findSourceSlot(inventory, step) < 0) {
-                missing.add(step);
+        List<EquipmentStep> satisfied = new ArrayList<>();
+        List<EquipmentStep> skippable = new ArrayList<>();
+        for (EquipmentStep step : loadout.steps()) {
+            SlotRequirement req = loadout.requirement(step);
+            ItemStack current = current(inventory, step);
+            if (current != null && acceptExisting && req.matches(step, current.getType())) {
+                satisfied.add(step);
+            } else if (current != null && requireEmptySlots) {
+                (req.optional() ? skippable : occupied).add(step);
+            } else if (findSourceSlot(inventory, step, req) < 0) {
+                (req.optional() ? skippable : missing).add(step);
             } else {
                 available.add(step);
             }
         }
-        return new Report(available, missing, occupied);
+        return new Report(available, missing, occupied, satisfied, skippable);
     }
 
-    public record Report(List<EquipmentStep> available, List<EquipmentStep> missing, List<EquipmentStep> occupied) {
+    public record Report(List<EquipmentStep> available, List<EquipmentStep> missing, List<EquipmentStep> occupied,
+                         List<EquipmentStep> satisfied, List<EquipmentStep> skippable) {
 
         public Report {
             available = List.copyOf(available);
             missing = List.copyOf(missing);
             occupied = List.copyOf(occupied);
+            satisfied = List.copyOf(satisfied);
+            skippable = List.copyOf(skippable);
+        }
+
+        public Report(List<EquipmentStep> available, List<EquipmentStep> missing, List<EquipmentStep> occupied) {
+            this(available, missing, occupied, List.of(), List.of());
         }
 
         public boolean allAvailable() {
@@ -72,8 +106,77 @@ public final class InventoryValidator {
             return available.isEmpty();
         }
 
+        /** True if the player can take part: everything required is ready, or with SKIP at least something is. */
         public boolean acceptableFor(MissingItemPolicy policy) {
-            return policy == MissingItemPolicy.ABORT ? allAvailable() : !noneAvailable();
+            return policy == MissingItemPolicy.ABORT ? allAvailable() : !(available.isEmpty() && satisfied.isEmpty());
         }
+    }
+
+    // ------------------------------------------------------------------ taking equipment off
+
+    /** Where an item could go in the player's storage, never the held slot. Returns -1 if there is no room. */
+    public static int findRoomSlot(PlayerInventory inventory, ItemStack item) {
+        ItemStack[] storage = new ItemStack[STORAGE_SLOTS];
+        for (int slot = 0; slot < STORAGE_SLOTS; slot++) {
+            storage[slot] = inventory.getItem(slot);
+        }
+        return findRoomSlot(storage, inventory.getHeldItemSlot(), item);
+    }
+
+    private static int findRoomSlot(ItemStack[] storage, int held, ItemStack item) {
+        for (int slot = 0; slot < STORAGE_SLOTS; slot++) {
+            if (slot != held && (storage[slot] == null || storage[slot].isEmpty())) {
+                return slot;
+            }
+        }
+        for (int slot = 0; slot < STORAGE_SLOTS; slot++) {
+            ItemStack existing = storage[slot];
+            if (slot != held && existing != null && !existing.isEmpty() && existing.isSimilar(item)
+                    && existing.getAmount() + item.getAmount() <= existing.getMaxStackSize()) {
+                return slot;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * What taking the loadout off would involve for this player.
+     *
+     * @param removable steps whose slot holds an item the loadout accepts
+     * @param enoughRoom whether every one of those items has somewhere to go
+     */
+    public record UnequipReport(List<EquipmentStep> removable, boolean enoughRoom) {
+    }
+
+    /** Checks, without changing anything, that every item can be returned to storage. */
+    public static UnequipReport unequipReport(Player player, Loadout loadout) {
+        PlayerInventory inventory = player.getInventory();
+        int held = inventory.getHeldItemSlot();
+        ItemStack[] storage = new ItemStack[STORAGE_SLOTS];
+        for (int slot = 0; slot < STORAGE_SLOTS; slot++) {
+            ItemStack item = inventory.getItem(slot);
+            storage[slot] = item == null ? null : item.clone();
+        }
+        List<EquipmentStep> removable = new ArrayList<>();
+        boolean room = true;
+        for (EquipmentStep step : loadout.unequipSteps()) {
+            ItemStack current = current(inventory, step);
+            if (current == null || !loadout.requirement(step).matches(step, current.getType())) {
+                continue;
+            }
+            removable.add(step);
+            int target = findRoomSlot(storage, held, current);
+            if (target < 0) {
+                room = false;
+                continue;
+            }
+            ItemStack there = storage[target];
+            if (there == null || there.isEmpty()) {
+                storage[target] = current.clone();
+            } else {
+                there.setAmount(there.getAmount() + current.getAmount());
+            }
+        }
+        return new UnequipReport(removable, room);
     }
 }

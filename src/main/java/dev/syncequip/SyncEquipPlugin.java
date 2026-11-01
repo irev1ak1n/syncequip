@@ -3,6 +3,7 @@ package dev.syncequip;
 import static dev.syncequip.util.MessageUtil.ph;
 
 import dev.syncequip.audio.EquipmentSoundManager;
+import dev.syncequip.commands.SquadConfigCommands;
 import dev.syncequip.commands.SyncEquipCommand;
 import dev.syncequip.config.ConfigManager;
 import dev.syncequip.config.SyncEquipSettings;
@@ -11,10 +12,13 @@ import dev.syncequip.demo.DemoManager;
 import dev.syncequip.equipment.EquipmentManager;
 import dev.syncequip.equipment.SequenceService;
 import dev.syncequip.listeners.HotkeyListener;
+import dev.syncequip.listeners.PadListener;
 import dev.syncequip.listeners.PlayerListener;
+import dev.syncequip.squad.PadService;
 import dev.syncequip.squad.Squad;
 import dev.syncequip.squad.SquadManager;
 import dev.syncequip.squad.SquadSequenceController;
+import dev.syncequip.squad.SquadStore;
 import dev.syncequip.synchronization.FinishReason;
 import dev.syncequip.synchronization.RemovalReason;
 import dev.syncequip.synchronization.TickSequenceScheduler;
@@ -36,6 +40,10 @@ public class SyncEquipPlugin extends JavaPlugin {
     private SquadManager squads;
     private SquadSequenceController squadController;
     private DemoManager demo;
+    private PadService pads;
+    private SquadStore squadStore;
+    private SquadConfigCommands squadConfig;
+    private boolean saveScheduled;
     private CooldownTracker cooldowns;
     private BukkitTask tickTask;
 
@@ -53,10 +61,20 @@ public class SyncEquipPlugin extends JavaPlugin {
                 new EquipmentManager(), new EquipmentSoundManager(), messages, cooldowns, Bukkit::getCurrentTick);
         squadController = new SquadSequenceController(getServer(), squads, sequenceService, messages, this::settings);
 
+        squadStore = new SquadStore(getDataFolder().toPath().resolve("squads.yml"), getLogger());
+        List<String> squadWarnings = new java.util.ArrayList<>();
+        squads.loadProfiles(squadStore.load(squadWarnings));
+        squadWarnings.forEach(w -> getLogger().warning(w));
+        pads = new PadService(getServer(), squads, messages, this::settings, System::currentTimeMillis);
+        pads.reindex();
+        squads.setChangeListener(this::markSquadsDirty);
+        squadConfig = new SquadConfigCommands(this);
+
         demo = new DemoManager(this, scheduler, this::settings, new EquipmentSoundManager(), messages, Bukkit::getCurrentTick);
         demo.removeTaggedMobs();
 
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
+        getServer().getPluginManager().registerEvents(new PadListener(pads, squads), this);
         getServer().getPluginManager().registerEvents(new DemoListener(demo), this);
         getServer().getPluginManager().registerEvents(new HotkeyListener(this), this);
         registerCommand("syncequip", "Synchronized armor equipping", List.of("se", "sequip"),
@@ -78,8 +96,35 @@ public class SyncEquipPlugin extends JavaPlugin {
         if (tickTask != null) {
             tickTask.cancel();
         }
-        if (squads != null) {
+        if (squads != null && squadStore != null) {
+            squadStore.write(squadStore.serialize(squads.profiles()));
+            squads.setChangeListener(() -> { });
             squads.clear();
+        }
+    }
+
+    /** Saves squad settings soon. Many changes in a row (a leader tuning a loadout) become one write. */
+    private void markSquadsDirty() {
+        if (saveScheduled || !isEnabled()) {
+            return;
+        }
+        saveScheduled = true;
+        getServer().getScheduler().runTaskLater(this, () -> {
+            saveScheduled = false;
+            flushSquads(false);
+        }, 20L);
+    }
+
+    /** Writes squads.yml. The text is built on the main thread, the file write can happen off it. */
+    public void flushSquads(boolean wait) {
+        String contents = squadStore.serialize(squads.profiles());
+        if (!squadStore.exists() && squads.profiles().stream().noneMatch(p -> p.persistable())) {
+            return;
+        }
+        if (wait || !isEnabled()) {
+            squadStore.write(contents);
+        } else {
+            getServer().getScheduler().runTaskAsynchronously(this, () -> squadStore.write(contents));
         }
     }
 
@@ -133,6 +178,14 @@ public class SyncEquipPlugin extends JavaPlugin {
 
     public SquadSequenceController squadController() {
         return squadController;
+    }
+
+    public PadService pads() {
+        return pads;
+    }
+
+    public SquadConfigCommands squadConfig() {
+        return squadConfig;
     }
 
     public DemoManager demo() {

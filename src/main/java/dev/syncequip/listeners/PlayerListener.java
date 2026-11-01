@@ -33,6 +33,7 @@ public final class PlayerListener implements Listener {
         plugin.sequenceService().scheduler().removeParticipant(player.getUniqueId(), RemovalReason.DISCONNECTED);
         plugin.leaveSquad(player.getUniqueId(), RemovalReason.DISCONNECTED);
         plugin.cooldowns().clear(player.getUniqueId());
+        plugin.pads().forget(player.getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -90,7 +91,7 @@ public final class PlayerListener implements Listener {
             return;
         }
         for (EquipmentStep step : EquipmentStep.values()) {
-            if (step.matches(item.getType())) {
+            if (step != EquipmentStep.MAIN_HAND && step.matches(item.getType())) {
                 event.setUseItemInHand(Event.Result.DENY);
                 return;
             }

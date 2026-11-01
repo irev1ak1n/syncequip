@@ -6,5 +6,6 @@ public enum RemovalReason {
     CHANGED_WORLD,
     LEFT_SQUAD,
     ITEM_UNAVAILABLE,
+    NO_INVENTORY_SPACE,
     INVALID_STATE
 }

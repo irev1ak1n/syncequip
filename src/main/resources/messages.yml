@@ -7,8 +7,8 @@ command:
   unknown: '<red>Unknown subcommand <white><input></white>. Try <white>/syncequip help</white>.'
   players-only: '<red>Only players can use this command.'
   no-permission: '<red>You do not have permission to do that.'
-  squad-usage: '<red>Usage: /syncequip squad \<create|invite|join|leave|list|start|cancel|transfer>'
-  missing-player: '<red>Usage: /syncequip squad <sub> \<player>'
+  squad-usage: '<red>Usage: /syncequip squad \<create|invite|join|leave|list|info|start|cancel|unequip|transfer|speed|pad|loadout|disband>'
+  missing-player: '<red>Usage: /syncequip squad <sub> \<player or squad>'
   player-not-found: '<red>Player <white><player></white> is not online.'
   failed: '<red>That did not work.'
 
@@ -23,6 +23,9 @@ problem:
   nothing: 'nothing to equip'
   missing: 'missing <pieces>'
   occupied: 'already wearing <pieces>'
+  occupied-hand: 'hands already busy with <pieces>'
+  nothing-to-remove: 'nothing to take off'
+  no-room: 'not enough free inventory slots'
 
 reason:
   disconnected: 'disconnected'
@@ -30,6 +33,7 @@ reason:
   changed_world: 'you changed worlds'
   left_squad: 'you left the squad'
   item_unavailable: 'an item was no longer available'
+  no_inventory_space: 'there was no room in your inventory'
   invalid_state: 'you could not change equipment'
 
 sequence:
@@ -48,7 +52,7 @@ sequence:
   shutdown-midway: '<yellow>SyncEquip is shutting down; <count> of <total> pieces were equipped, the rest are still in your inventory.'
 
 squad:
-  created: '<green>Squad created. Invite players with <white>/syncequip squad invite \<player></white>.'
+  created: '<green>Squad created. Its name is <white><squad></white>. Invite players with <white>/syncequip squad invite \<player></white> or set a joining block with <white>/syncequip squad pad set</white>.'
   already-in-squad: '<red>You are already in a squad. Leave it first with <white>/syncequip squad leave</white>.'
   not-in-squad: '<red>You are not in a squad.'
   leader-only: '<red>Only the squad leader can do that.'
@@ -72,7 +76,17 @@ squad:
   nothing-to-cancel: '<red>Your squad has no sequence running.'
   start-blocked: '<red>Cannot start: <count> member(s) are not ready:'
   start-blocked-line: ' <gray>•</gray> <white><player></white><gray>: <reason>'
-  started: '<green><white><leader></white> started the squad sequence (<count> players). Hold still!'
+  restored: '<gray>Saved settings for <squad> were restored (speed, loadout, joining block).'
+  name-invalid: '<red>Squad names use letters, digits, - and _, 2 to 24 characters.'
+  name-taken: '<red>A squad called <squad> is already running.'
+  name-reserved: '<red>The name <squad> belongs to another player''s saved squad.'
+  loadout-empty: '<red>The squad loadout has no slots turned on. Check <white>/syncequip squad loadout show</white>.'
+  more-blocked: ' <gray>...and <count> more'
+  admin-only: '<red>Only an administrator can manage another squad.'
+  no-squad-named: '<red>There is no squad called <name>.'
+  busy-no-change: '<red>A sequence is running. Wait for it to finish or cancel it, then change this.'
+  disbanded: '<yellow>Squad <squad> was disbanded.'
+  started: '<green><white><leader></white> started the squad sequence (<count> players, <ticks> ticks apart). Hold still!'
 
 settings:
   header: '<gold>SyncEquip settings:'
@@ -87,14 +101,21 @@ help:
   header: '<gold>SyncEquip commands:'
   lines:
     - ' <white>/syncequip solo</white> <gray>- equip your armor and shield in sequence'
-    - ' <white>/syncequip squad create</white> <gray>- create a squad'
+    - ' <white>/syncequip unequip</white> <gray>- take them off again in reverse order'
+    - ' <white>/syncequip squad create [name]</white> <gray>- create a squad'
     - ' <white>/syncequip squad invite \<player></white> <gray>- invite a player'
-    - ' <white>/syncequip squad join \<leader></white> <gray>- join a squad you were invited to'
+    - ' <white>/syncequip squad join \<squad or leader></white> <gray>- join a squad you were invited to'
     - ' <white>/syncequip squad leave</white> <gray>- leave your squad'
     - ' <white>/syncequip squad list</white> <gray>- list squad members'
+    - ' <white>/syncequip squad info</white> <gray>- show speed, loadout and joining block'
     - ' <white>/syncequip squad start</white> <gray>- start the synchronized sequence (leader)'
+    - ' <white>/syncequip squad unequip</white> <gray>- everyone takes their gear off together (leader)'
     - ' <white>/syncequip squad cancel</white> <gray>- cancel the running sequence (leader)'
+    - ' <white>/syncequip squad speed [ticks|default]</white> <gray>- ticks between pieces, 1 to 10 (leader)'
+    - ' <white>/syncequip squad pad set|remove|info|enable|disable</white> <gray>- joining block (leader)'
+    - ' <white>/syncequip squad loadout show|reset|set|optional|order</white> <gray>- required items (leader)'
     - ' <white>/syncequip squad transfer \<player></white> <gray>- make another member the leader'
+    - ' <white>/syncequip squad disband</white> <gray>- end the squad and forget its settings (leader)'
     - ' <white>/syncequip settings</white> <gray>- show the active settings'
     - ' <white>/syncequip reload</white> <gray>- reload the configuration (admin)'
 
@@ -118,3 +139,67 @@ demo:
   cleared: '<green>Removed <count> demo mobs.'
   peaceful: '<red>Husks are removed instantly on Peaceful difficulty. Raise the difficulty (for example <white>/difficulty easy</white>) and try again.'
   spawn-short: '<yellow>Only <count> of <wanted> husks could be spawned. Another plugin may have blocked the rest.'
+
+
+unequip:
+  cannot-start: '<red>Cannot take your gear off: <reason>.'
+  left-out: '<yellow>You were left out of the unequip: <reason>. Free some inventory slots first.'
+  excluded: '<yellow><count> member(s) were left out because they cannot take part:'
+  nobody: '<red>Nobody in the squad has anything to take off.'
+  skipped-empty: '<gray><count> member(s) had nothing to take off.'
+  started: '<green><white><leader></white> started the squad unequip (<count> players, <ticks> ticks apart).'
+  removed-before-start: '<yellow>You were removed before anything came off (<reason>). Your inventory is unchanged.'
+  interrupted: '<yellow>Unequip interrupted (<reason>): <count> of <total> pieces were put back in your inventory, the rest are still equipped.'
+  completed-actionbar: '<green>Unequipped <count>/<total>'
+  completed-partial: '<yellow>Unequip finished: <count> of <total> pieces went back to your inventory (the rest were not equipped).'
+  cancelled-before-start: '<yellow>Unequip cancelled before anything came off.'
+  cancelled-midway: '<yellow>Unequip cancelled: <count> of <total> pieces went back to your inventory, the rest are still equipped.'
+  shutdown-before-start: '<yellow>SyncEquip is shutting down; nothing was taken off.'
+  shutdown-midway: '<yellow>SyncEquip is shutting down; <count> of <total> pieces went back to your inventory, the rest are still equipped.'
+
+info:
+  header: '<gold>Squad <white><squad></white>:'
+  members: ' <gray>Members:</gray> <white><count>/<max></white> <gray>(leader <leader>)'
+  inactive: ' <gray>Not running right now. Its leader can bring it back with /syncequip squad create.'
+  speed: ' <gray>Speed:</gray> <white><ticks> ticks</white> <gray>(about <ms> ms, <source>)'
+  loadout: ' <gray>Loadout:</gray> <white><steps></white> <gray>(<source>)'
+  pad: ' <gray>Joining block:</gray> <white><pad>'
+
+speed:
+  current: '<gray>Squad speed is <white><ticks> ticks</white> between pieces (about <ms> ms, <source>).'
+  set: '<green>Squad speed set to <white><ticks> ticks</white> (about <ms> ms). It applies to equipping and unequipping.'
+  reset: '<green>Squad speed is back to the default of <white><ticks> ticks</white> (about <ms> ms).'
+  invalid: '<red>Choose a whole number of ticks from 1 to 10, or <white>default</white>.'
+
+pad:
+  usage: '<red>Usage: /syncequip squad pad \<set|remove|info|enable|disable> [squad]'
+  set: '<green>Joining block for <white><squad></white> set at <white><where></white>. Players who step on it join the squad.'
+  not-solid: '<red>Stand on a solid block first.'
+  conflict: '<red>Another squad already uses that block as its joining block.'
+  removed: '<green>Removed the joining block of <white><squad></white>.'
+  none: '<yellow><squad> has no joining block.'
+  enabled: '<green>Joining block of <white><squad></white> is on.'
+  disabled: '<yellow>Joining block of <white><squad></white> is off. Nobody joins by stepping on it.'
+  info: '<gray>Joining block of <white><squad></white>: <white><where>'
+  joined: '<green>You joined squad <white><squad></white>'
+  inactive: '<yellow>Squad <squad> is not running right now. Ask its leader to start it.'
+  in-other-squad: '<yellow>You are in squad <current>. Use <white>/syncequip squad leave</white> to join <squad>.'
+  full: '<red>Squad <squad> is full (max <max> players).'
+  leader-count: '<gray><squad>: <white><count></white> members'
+  destroyed: '<yellow>The joining block of <squad> at <x> <y> <z> was destroyed, so it was removed. Set a new one with /syncequip squad pad set.'
+
+loadout:
+  usage: '<red>Usage: /syncequip squad loadout \<show|reset|set|optional|order>'
+  usage-set: '<red>Usage: /syncequip squad loadout set \<mainhand|offhand|helmet|chestplate|leggings|boots> \<item|any|any_sword|none> [optional]'
+  usage-optional: '<red>Usage: /syncequip squad loadout optional \<slot> \<on|off>'
+  usage-order: '<red>Usage: /syncequip squad loadout order \<slot> \<slot> ... (any slots you leave out go last)'
+  unknown-slot: '<red><slot> is not a slot. Use mainhand, offhand, helmet, chestplate, leggings or boots.'
+  invalid: '<red><reason>'
+  set: '<green><slot> now needs: <white><value></white>'
+  reset: '<green>Squad loadout is back to the default.'
+  optional-on: '<green><slot> is optional. It is skipped quietly when missing.'
+  optional-off: '<green><slot> is required again.'
+  order-set: '<green>Sequence order: <white><steps></white>'
+  header: '<gold>Loadout of <white><squad></white> <gray>(<source>)<gold>:'
+  line: ' <gray><slot>:</gray> <white><value></white><gray><flags>'
+  order: ' <gray>Order:</gray> <white><steps>'

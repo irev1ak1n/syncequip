@@ -46,25 +46,41 @@ public final class EquipmentSoundManager {
         if (step == EquipmentStep.SHIELD) {
             return sounds.shieldSound();
         }
+        if (step == EquipmentStep.MAIN_HAND) {
+            return sounds.mainHandSound();
+        }
         return sounds.useVanillaArmorSounds()
                 ? vanillaArmorSound(material, sounds.armorFallbackSound())
                 : sounds.armorFallbackSound();
     }
 
     public void playStep(Player player, EquipmentStep step, Material material, SyncEquipSettings.Sounds sounds) {
-        playStep(player.getLocation(), step, material, sounds);
+        playStep(player.getLocation(), step, material, sounds, 1.0f);
     }
 
-    /** Plays the step sound at a position, for everyone in hearing range. Used for demo mobs. */
     public void playStep(Location location, EquipmentStep step, Material material, SyncEquipSettings.Sounds sounds) {
+        playStep(location, step, material, sounds, 1.0f);
+    }
+
+    /** Plays the step sound at a position for everyone in hearing range. Taking things off passes a lower pitch. */
+    public void playStep(Location location, EquipmentStep step, Material material, SyncEquipSettings.Sounds sounds,
+                         float pitchMultiplier) {
         String key = soundFor(step, material, sounds);
         if (key == null) {
             return;
         }
-        boolean shield = step == EquipmentStep.SHIELD;
-        float volume = shield ? sounds.shieldVolume() : sounds.volume();
-        float pitch = shield ? sounds.shieldPitch() : sounds.pitch();
-        location.getWorld().playSound(location, key, SoundCategory.PLAYERS, volume, pitch);
+        float volume = switch (step) {
+            case SHIELD -> sounds.shieldVolume();
+            case MAIN_HAND -> sounds.mainHandVolume();
+            default -> sounds.volume();
+        };
+        float pitch = switch (step) {
+            case SHIELD -> sounds.shieldPitch();
+            case MAIN_HAND -> sounds.mainHandPitch();
+            default -> sounds.pitch();
+        };
+        float finalPitch = Math.max(0.5f, Math.min(2.0f, pitch * pitchMultiplier));
+        location.getWorld().playSound(location, key, SoundCategory.PLAYERS, volume, finalPitch);
     }
 
     public void playCue(Player player, String key, float volume, float pitch) {
