@@ -39,6 +39,20 @@ bot-test\start-bot-test.bat 5
 
 Needs Node.js 22 or newer. Java 25 is found the same way as for the main test server.
 
+## Demo mode check
+
+`node demo-test.js [mobs]` (default 10, up to 20) tests Demo Mode on the same isolated Paper server. Two bots
+join. Bot1 (made operator) spawns the husks and runs the sequence, and Bot2 watches from nearby. It checks:
+
+- the husks really exist for both clients, in one row, with no armor, and the real entity data shows
+  `NoAI`, `Invulnerable` and `Silent`
+- every husk gets each piece on one server tick (0, 4, 8, 12, 16 by default), with no drift
+- the observer's client received each piece for every husk within about a millisecond of each other
+- reset, replay without respawning, a speed change, a repeat run, and `clear`
+- husks are gone after a server restart (they are not saved)
+
+It cannot show how the armor looks or sounds. The run uses `difficulty=easy` because husks are deleted on Peaceful.
+
 ## Safety
 
 - The bot server is on **offline mode on purpose**, because bots have no Minecraft account. It is only safe

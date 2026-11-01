@@ -53,7 +53,9 @@ public final class MessageUtil {
     }
 
     public String raw(String key) {
-        return messages.getString(key, "<red>Missing message: " + key);
+        // getString(key) falls back to the bundled defaults, getString(key, fallback) would not.
+        String value = messages.getString(key);
+        return value != null ? value : "<red>Missing message: " + key;
     }
 
     public Component render(String key, TagResolver... placeholders) {
@@ -72,7 +74,7 @@ public final class MessageUtil {
         if (raw.isEmpty()) {
             return;
         }
-        Component prefix = MINI.deserialize(messages.getString("prefix", ""));
+        Component prefix = MINI.deserialize(raw("prefix"));
         audience.sendMessage(prefix.append(MINI.deserialize(raw, placeholders)));
     }
 

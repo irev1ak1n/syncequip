@@ -4,6 +4,7 @@ import static dev.syncequip.util.MessageUtil.ph;
 
 import dev.syncequip.SyncEquipPlugin;
 import dev.syncequip.config.SyncEquipSettings;
+import dev.syncequip.demo.DemoManager;
 import dev.syncequip.equipment.SequenceService;
 import dev.syncequip.squad.Squad;
 import dev.syncequip.squad.SquadManager;
@@ -20,6 +21,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import org.bukkit.Difficulty;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -29,8 +31,10 @@ public final class SyncEquipCommand implements BasicCommand {
     public static final String PERMISSION_USE = "syncequip.use";
     public static final String PERMISSION_SQUAD = "syncequip.squad";
     public static final String PERMISSION_RELOAD = "syncequip.reload";
+    public static final String PERMISSION_DEMO = "syncequip.demo";
 
-    private static final List<String> ROOT = List.of("solo", "squad", "settings", "reload", "help");
+    private static final List<String> ROOT = List.of("solo", "squad", "demo", "settings", "reload", "help");
+    private static final List<String> DEMO = List.of("spawn", "start", "repeat", "stop", "reset", "clear", "speed");
     private static final List<String> SQUAD = List.of("create", "invite", "join", "leave", "list", "start",
             "cancel", "transfer");
 
@@ -59,6 +63,7 @@ public final class SyncEquipCommand implements BasicCommand {
         switch (args[0].toLowerCase(Locale.ROOT)) {
             case "solo" -> solo(sender);
             case "squad" -> squad(sender, args);
+            case "demo" -> demo(sender, args);
             case "settings" -> settings(sender);
             case "reload" -> reload(sender);
             case "help" -> sendHelp(sender);
@@ -115,6 +120,86 @@ public final class SyncEquipCommand implements BasicCommand {
         }
     }
 
+
+    private void demo(CommandSender sender, String[] args) {
+        if (!requirePermission(sender, PERMISSION_DEMO)) {
+            return;
+        }
+        MessageUtil messages = plugin.messages();
+        DemoManager demo = plugin.demo();
+        if (args.length < 2) {
+            messages.send(sender, "demo.usage");
+            return;
+        }
+        switch (args[1].toLowerCase(Locale.ROOT)) {
+            case "spawn" -> demoSpawn(sender, args, demo);
+            case "start" -> demoStart(sender, demo, 1);
+            case "repeat" -> {
+                int max = DemoManager.MAX_REPEATS;
+                Integer times = args.length > 2 ? parseInt(args[2]) : null;
+                if (times == null || times < 1 || times > max) {
+                    messages.send(sender, "demo.repeat-invalid", ph("max", max));
+                } else {
+                    demoStart(sender, demo, times);
+                }
+            }
+            case "stop" -> messages.send(sender, demo.stop() ? "demo.stopping" : "demo.nothing-running");
+            case "reset" -> messages.send(sender, "demo.reset", ph("count", demo.reset()));
+            case "clear" -> messages.send(sender, "demo.cleared", ph("count", demo.clear()));
+            case "speed" -> {
+                Integer ticks = args.length > 2 ? parseInt(args[2]) : null;
+                if (ticks == null || ticks < 1 || ticks > 10) {
+                    messages.send(sender, "demo.speed-invalid", ph("current", demo.interval()));
+                } else {
+                    demo.setInterval(ticks);
+                    messages.send(sender, "demo.speed-set", ph("ticks", ticks), ph("ms", ticks * 50));
+                }
+            }
+            default -> messages.send(sender, "demo.usage");
+        }
+    }
+
+    private void demoSpawn(CommandSender sender, String[] args, DemoManager demo) {
+        Player player = requirePlayer(sender);
+        if (player == null) {
+            return;
+        }
+        int max = plugin.settings().demo().maxMobs();
+        Integer count = args.length > 2 ? parseInt(args[2]) : null;
+        if (count == null || count < 1 || count > max) {
+            plugin.messages().send(player, "demo.count-invalid", ph("max", max));
+            return;
+        }
+        if (player.getWorld().getDifficulty() == Difficulty.PEACEFUL) {
+            plugin.messages().send(player, "demo.peaceful");
+            return;
+        }
+        int spawned = demo.spawn(player, count);
+        plugin.messages().send(player, spawned == count ? "demo.spawned" : "demo.spawn-short",
+                ph("count", spawned), ph("wanted", count));
+    }
+
+    private void demoStart(CommandSender sender, DemoManager demo, int runs) {
+        Player player = requirePlayer(sender);
+        if (player == null) {
+            return;
+        }
+        MessageUtil messages = plugin.messages();
+        switch (demo.start(player, runs)) {
+            case NO_MOBS -> messages.send(player, "demo.no-mobs");
+            case BUSY -> messages.send(player, "demo.busy");
+            case STARTED -> messages.send(player, runs > 1 ? "demo.repeat-started" : "demo.started",
+                    ph("count", demo.mobCount()), ph("ticks", demo.interval()), ph("runs", runs));
+        }
+    }
+
+    private static Integer parseInt(String raw) {
+        try {
+            return Integer.parseInt(raw);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
 
     private void squad(CommandSender sender, String[] args) {
         Player player = requirePlayer(sender);
@@ -266,6 +351,20 @@ public final class SyncEquipCommand implements BasicCommand {
             String prefix = args.length == 0 ? "" : args[0];
             return filter(ROOT.stream().filter(sub -> canSee(sender, sub)), prefix);
         }
+        if (args[0].equalsIgnoreCase("demo") && sender.hasPermission(PERMISSION_DEMO)) {
+            if (args.length == 2) {
+                return filter(DEMO.stream(), args[1]);
+            }
+            if (args.length == 3) {
+                return switch (args[1].toLowerCase(Locale.ROOT)) {
+                    case "spawn" -> filter(Stream.of("1", "5", "10", "20"), args[2]);
+                    case "speed" -> filter(Stream.of("1", "2", "4", "6", "10"), args[2]);
+                    case "repeat" -> filter(Stream.of("2", "3", "5", "10"), args[2]);
+                    default -> List.of();
+                };
+            }
+            return List.of();
+        }
         if (!args[0].equalsIgnoreCase("squad") || !sender.hasPermission(PERMISSION_SQUAD)) {
             return List.of();
         }
@@ -307,6 +406,7 @@ public final class SyncEquipCommand implements BasicCommand {
         return switch (sub) {
             case "reload" -> sender.hasPermission(PERMISSION_RELOAD);
             case "squad" -> sender.hasPermission(PERMISSION_SQUAD);
+            case "demo" -> sender.hasPermission(PERMISSION_DEMO);
             default -> true;
         };
     }

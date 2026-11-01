@@ -27,6 +27,7 @@ The plugin runs entirely on the server. Players need no mods, resource packs or 
 - [Installation](#installation)
 - [How it works](#how-it-works)
 - [Commands](#commands)
+- [Demo mode](#demo-mode)
 - [Permissions](#permissions)
 - [Configuration](#configuration)
 - [Usage examples](#usage-examples)
@@ -143,7 +144,46 @@ Base command: `/syncequip` (aliases `/se`, `/sequip`). Every subcommand has tab 
 | `/syncequip squad transfer <player>` | Make another member the leader |
 | `/syncequip settings` | Show the settings currently in effect |
 | `/syncequip reload` | Reload `config.yml` and `messages.yml` |
+| `/syncequip demo ...` | Demo mode with husks, see [Demo mode](#demo-mode) |
 | `/syncequip help` | Show command help |
+
+## Demo mode
+
+Demo mode lets one person watch the sequence without other players. It spawns a row of husks, then
+equips them on the same shared tick scheduler that solo and squad sequences use. Every husk gets each
+piece on the same server tick.
+
+Requires the `syncequip.demo` permission (operators by default).
+
+| Command | What it does |
+|---|---|
+| `/syncequip demo spawn <count>` | Spawn 1 to 20 husks in a straight row in front of you (replaces any earlier row) |
+| `/syncequip demo start` | Undress the husks, run the countdown, then equip netherite boots, leggings, chestplate, helmet and a shield |
+| `/syncequip demo repeat <times>` | Run the sequence several times in a row for recording. The finished result stays visible for a few seconds, then everything resets |
+| `/syncequip demo stop` | Stop a running demo. Pieces already on stay on |
+| `/syncequip demo reset` | Remove all equipment so the sequence can be replayed |
+| `/syncequip demo clear` | Remove all demo husks |
+| `/syncequip demo speed <ticks>` | Ticks between pieces (1 to 10) for the next run |
+
+Details:
+
+- The husks have no AI, make no sound, cannot be hurt, do not burn in daylight, do not target anyone,
+  and drop nothing. They start with every equipment slot empty.
+- The gear is temporary. It is never taken from a player and never touches a player inventory.
+- The demo interval defaults to **4 ticks** so each piece is easy to see (`demo.interval-ticks`). The normal
+  sequence interval stays at 2 ticks (`equipment.interval-ticks`). `/syncequip demo speed 2` shows the real speed.
+- Sounds are the normal ones: the netherite equip sound for each armor piece and the shield sound, played
+  at each husk's position. There are no particles or other effects.
+- By default the husks turn to face you (`demo.facing: TOWARD_PLAYER`). Use `SAME_AS_PLAYER` to make
+  them face the way you face.
+- Demo husks are tagged and are never saved with the world. They are removed when the plugin is disabled
+  or reloaded, and any leftovers are swept up when the plugin starts.
+- Husks cannot exist on **Peaceful** difficulty, so the spawn command tells you to raise it.
+- `debug.log-sequence-ticks: true` also logs every demo step per husk (as `Demo1`, `Demo2`, ...) with its
+  scheduled and actual tick, and `scripts/check-sync-log.ps1` can check those lines.
+
+Configuration (`demo:` section in `config.yml`): `interval-ticks`, `countdown-seconds`,
+`repeat-hold-seconds`, `max-mobs`, `spacing`, `distance` and `facing`.
 
 ## Permissions
 
@@ -153,6 +193,7 @@ Base command: `/syncequip` (aliases `/se`, `/sequip`). Every subcommand has tab 
 | `syncequip.hotkey` | everyone | The sneak + swap trigger (if enabled in config) |
 | `syncequip.squad` | everyone | All `/syncequip squad …` management commands |
 | `syncequip.squad.start` | everyone | Starting and cancelling the sequence of a squad you lead |
+| `syncequip.demo` | op | `/syncequip demo ...` (spawn husks and run the demo sequence) |
 | `syncequip.reload` | op | `/syncequip reload` |
 | `syncequip.bypass.cooldown` | op | Ignore the cooldown |
 | `syncequip.admin` | op | Start or cancel the sequence of any squad you are in; includes reload and cooldown bypass |

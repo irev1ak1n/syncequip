@@ -17,6 +17,7 @@ public record SyncEquipSettings(
         Sounds sounds,
         Visuals visuals,
         Controls controls,
+        Demo demo,
         boolean debugLogTicks) {
 
     public SyncEquipSettings {
@@ -52,6 +53,15 @@ public record SyncEquipSettings(
     public enum HotkeyAction {
         SOLO,
         AUTO
+    }
+
+    public enum DemoFacing {
+        TOWARD_PLAYER,
+        SAME_AS_PLAYER
+    }
+
+    public record Demo(int intervalTicks, int countdownSeconds, int repeatHoldSeconds, int maxMobs, float spacing,
+                       float distance, DemoFacing facing) {
     }
 
     public record Controls(boolean sneakSwapTrigger, HotkeyAction sneakSwapAction, int cooldownSeconds) {

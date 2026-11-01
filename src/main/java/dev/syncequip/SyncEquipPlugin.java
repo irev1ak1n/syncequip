@@ -6,6 +6,8 @@ import dev.syncequip.audio.EquipmentSoundManager;
 import dev.syncequip.commands.SyncEquipCommand;
 import dev.syncequip.config.ConfigManager;
 import dev.syncequip.config.SyncEquipSettings;
+import dev.syncequip.demo.DemoListener;
+import dev.syncequip.demo.DemoManager;
 import dev.syncequip.equipment.EquipmentManager;
 import dev.syncequip.equipment.SequenceService;
 import dev.syncequip.listeners.HotkeyListener;
@@ -33,6 +35,7 @@ public class SyncEquipPlugin extends JavaPlugin {
     private SequenceService sequenceService;
     private SquadManager squads;
     private SquadSequenceController squadController;
+    private DemoManager demo;
     private CooldownTracker cooldowns;
     private BukkitTask tickTask;
 
@@ -50,7 +53,11 @@ public class SyncEquipPlugin extends JavaPlugin {
                 new EquipmentManager(), new EquipmentSoundManager(), messages, cooldowns, Bukkit::getCurrentTick);
         squadController = new SquadSequenceController(getServer(), squads, sequenceService, messages, this::settings);
 
+        demo = new DemoManager(this, scheduler, this::settings, new EquipmentSoundManager(), messages, Bukkit::getCurrentTick);
+        demo.removeTaggedMobs();
+
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
+        getServer().getPluginManager().registerEvents(new DemoListener(demo), this);
         getServer().getPluginManager().registerEvents(new HotkeyListener(this), this);
         registerCommand("syncequip", "Synchronized armor equipping", List.of("se", "sequip"),
                 new SyncEquipCommand(this));
@@ -61,6 +68,9 @@ public class SyncEquipPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (demo != null) {
+            demo.shutdown();
+        }
         if (scheduler != null) {
             // Each step is an atomic move, so stopping here always leaves every inventory in a valid state.
             scheduler.cancelAll(FinishReason.SHUTDOWN);
@@ -123,6 +133,10 @@ public class SyncEquipPlugin extends JavaPlugin {
 
     public SquadSequenceController squadController() {
         return squadController;
+    }
+
+    public DemoManager demo() {
+        return demo;
     }
 
     public CooldownTracker cooldowns() {

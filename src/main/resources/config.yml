@@ -93,3 +93,20 @@ controls:
 debug:
   # Log the scheduled and actual server tick of every step for every player.
   log-sequence-ticks: false
+
+demo:
+  # Demo mode spawns a row of husks and equips them on the shared tick scheduler, so you can watch
+  # the sequence without other players. Commands need the syncequip.demo permission (op by default).
+  # Ticks between steps. 4 makes each piece easy to see. Change at runtime with /syncequip demo speed.
+  interval-ticks: 4
+  # Countdown before a demo run starts (0-10 seconds).
+  countdown-seconds: 3
+  # In repeat mode, how long the finished result stays on screen before the next run (0-60 seconds).
+  repeat-hold-seconds: 3
+  # Most mobs one spawn command may create (1-100).
+  max-mobs: 20
+  # Blocks between mobs in the row, and how far in front of you the row is placed.
+  spacing: 1.5
+  distance: 4.0
+  # TOWARD_PLAYER: the mobs turn to face you. SAME_AS_PLAYER: they face the way you face.
+  facing: TOWARD_PLAYER

@@ -5,7 +5,7 @@ const DEBUG_LINE = /\[debug\] sequence #(\d+) step (\d+)\/(\d+) (\w+)\s+player=(
 const STEP_NAMES = ['BOOTS', 'LEGGINGS', 'CHESTPLATE', 'HELMET', 'SHIELD']
 
 /** Server side proof: parses the plugin's own debug log lines. */
-function analyzeServerTicks (lines, expectedPlayers) {
+function analyzeServerTicks (lines, expectedPlayers, interval = 2) {
   const rows = []
   for (const line of lines) {
     const m = DEBUG_LINE.exec(line)
@@ -45,7 +45,7 @@ function analyzeServerTicks (lines, expectedPlayers) {
     checks.push([`all ${expectedPlayers} bots took part`, seq.players === expectedPlayers])
     checks.push(['all five steps ran', seq.steps.length === 5])
     checks.push(['every step ran on a single server tick for all bots', seq.steps.every(s => s.sameTick)])
-    checks.push(['step offsets are 0, 2, 4, 6, 8 ticks', seq.steps.map(s => s.offset).join(',') === '0,2,4,6,8'])
+    checks.push([`step offsets are ${[0, 1, 2, 3, 4].map(i => i * interval).join(', ')} ticks`, seq.steps.map(s => s.offset).join(',') === [0, 1, 2, 3, 4].map(i => i * interval).join(',')])
     checks.push(['no drift (server kept up)', seq.steps.every(s => s.maxDrift === 0)])
     checks.push(['every step reported EQUIPPED', seq.steps.every(s => s.allEquipped)])
   }

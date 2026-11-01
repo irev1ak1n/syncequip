@@ -52,6 +52,11 @@ public final class EquipmentSoundManager {
     }
 
     public void playStep(Player player, EquipmentStep step, Material material, SyncEquipSettings.Sounds sounds) {
+        playStep(player.getLocation(), step, material, sounds);
+    }
+
+    /** Plays the step sound at a position, for everyone in hearing range. Used for demo mobs. */
+    public void playStep(Location location, EquipmentStep step, Material material, SyncEquipSettings.Sounds sounds) {
         String key = soundFor(step, material, sounds);
         if (key == null) {
             return;
@@ -59,8 +64,7 @@ public final class EquipmentSoundManager {
         boolean shield = step == EquipmentStep.SHIELD;
         float volume = shield ? sounds.shieldVolume() : sounds.volume();
         float pitch = shield ? sounds.shieldPitch() : sounds.pitch();
-        Location location = player.getLocation();
-        player.getWorld().playSound(location, key, SoundCategory.PLAYERS, volume, pitch);
+        location.getWorld().playSound(location, key, SoundCategory.PLAYERS, volume, pitch);
     }
 
     public void playCue(Player player, String key, float volume, float pitch) {

@@ -12,7 +12,8 @@ public final class SyncSequence {
 
     public enum Mode {
         SOLO,
-        SQUAD
+        SQUAD,
+        DEMO
     }
 
     public enum State {

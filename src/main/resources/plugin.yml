@@ -18,6 +18,9 @@ permissions:
   syncequip.squad.start:
     description: Start and cancel the sequence of a squad you lead.
     default: true
+  syncequip.demo:
+    description: Spawn demo husks and run the demo equipment sequence (/syncequip demo).
+    default: op
   syncequip.reload:
     description: Reload config.yml and messages.yml.
     default: op
@@ -29,4 +32,5 @@ permissions:
     default: op
     children:
       syncequip.reload: true
+      syncequip.demo: true
       syncequip.bypass.cooldown: true

@@ -7,6 +7,17 @@ Note anything odd next to it, with the time, so it is easy to find in the logs.
 inventory shows a sword in slot 1, netherite boots, leggings, chestplate and helmet and a shield in
 the top inventory row, and nothing worn. Keep slot 1 selected.
 
+## Demo mode (one person, ops only)
+
+- [ ] `/syncequip demo spawn 10` puts ten husks in a row in front of you, facing you, with no armor
+- [ ] `/syncequip demo start` counts down 3, 2, 1 and each piece then appears on every husk at the same moment
+- [ ] The order is boots, leggings, chestplate, helmet, shield, about 4 ticks (a fifth of a second) apart
+- [ ] You hear the armor sounds from the husks, not doubled
+- [ ] `/syncequip demo reset` strips them, and `/syncequip demo start` plays it again
+- [ ] `/syncequip demo speed 2` makes the next run faster
+- [ ] `/syncequip demo repeat 3` runs three times with a short pause
+- [ ] `/syncequip demo clear` removes them all, and nothing is dropped
+
 ## Solo
 
 - [ ] `/syncequip solo` puts the pieces on one at a time, in the order boots, leggings, chestplate, helmet, shield

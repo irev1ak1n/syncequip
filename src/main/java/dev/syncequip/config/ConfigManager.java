@@ -2,6 +2,8 @@ package dev.syncequip.config;
 
 import dev.syncequip.config.SyncEquipSettings.Controls;
 import dev.syncequip.config.SyncEquipSettings.CountdownDisplay;
+import dev.syncequip.config.SyncEquipSettings.Demo;
+import dev.syncequip.config.SyncEquipSettings.DemoFacing;
 import dev.syncequip.config.SyncEquipSettings.HotkeyAction;
 import dev.syncequip.config.SyncEquipSettings.Sounds;
 import dev.syncequip.config.SyncEquipSettings.Visuals;
@@ -99,8 +101,18 @@ public final class ConfigManager {
                 parseEnum(config, "controls.sneak-swap-action", HotkeyAction.class, HotkeyAction.SOLO, warnings),
                 intInRange(config, "controls.cooldown-seconds", 3, 0, 3600, warnings));
 
+        Demo demo = new Demo(
+                intInRange(config, "demo.interval-ticks", 4, SequenceTimeline.MIN_INTERVAL,
+                        SequenceTimeline.MAX_INTERVAL, warnings),
+                intInRange(config, "demo.countdown-seconds", 3, 0, 10, warnings),
+                intInRange(config, "demo.repeat-hold-seconds", 3, 0, 60, warnings),
+                intInRange(config, "demo.max-mobs", 20, 1, 100, warnings),
+                floatInRange(config, "demo.spacing", 1.5f, 1.0f, 5.0f, warnings),
+                floatInRange(config, "demo.distance", 4.0f, 2.0f, 20.0f, warnings),
+                parseEnum(config, "demo.facing", DemoFacing.class, DemoFacing.TOWARD_PLAYER, warnings));
+
         return new SyncEquipSettings(interval, order, requireEmpty, policy, lockInventory, soloCountdown,
-                squadCountdown, maxSquad, inviteExpiry, sounds, visuals, controls,
+                squadCountdown, maxSquad, inviteExpiry, sounds, visuals, controls, demo,
                 config.getBoolean("debug.log-sequence-ticks", false));
     }
 
