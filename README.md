@@ -27,6 +27,7 @@ The plugin runs entirely on the server. Players need no mods, resource packs or 
 - [Installation](#installation)
 - [How it works](#how-it-works)
 - [Commands](#commands)
+- [Squads in detail](#squads-in-detail-v11)
 - [Demo mode](#demo-mode)
 - [Permissions](#permissions)
 - [Configuration](#configuration)
@@ -134,18 +135,127 @@ Base command: `/syncequip` (aliases `/se`, `/sequip`). Every subcommand has tab 
 | Command | Description |
 |---|---|
 | `/syncequip solo` | Start your personal equipment sequence |
-| `/syncequip squad create` | Create a squad (you become the leader) |
+| `/syncequip squad create [name]` | Create a squad (you become the leader) |
 | `/syncequip squad invite <player>` | Invite a player (leader only) |
-| `/syncequip squad join <leader>` | Join a squad you were invited to |
+| `/syncequip squad join <squad or leader>` | Join a squad you were invited to |
 | `/syncequip squad leave` | Leave your squad (leadership passes on if you were leader) |
 | `/syncequip squad list` | List squad members |
 | `/syncequip squad start` | Validate everyone and start the synchronized sequence (leader) |
 | `/syncequip squad cancel` | Cancel the running squad sequence (leader) |
+| `/syncequip squad info` | Show members, speed, loadout and joining block |
+| `/syncequip squad unequip` | Everyone takes their gear off together, in reverse order (leader) |
+| `/syncequip squad speed [ticks\|default]` | Ticks between pieces for this squad, 1 to 10 (leader) |
+| `/syncequip squad pad set\|remove\|info\|enable\|disable` | The joining block, see [Squads in detail](#squads-in-detail-v11) |
+| `/syncequip squad loadout show\|reset\|set\|optional\|order` | Which items each slot needs (leader) |
+| `/syncequip squad disband` | End the squad and delete its saved settings (leader) |
+| `/syncequip unequip` | Take your own gear off in reverse order |
 | `/syncequip squad transfer <player>` | Make another member the leader |
 | `/syncequip settings` | Show the settings currently in effect |
 | `/syncequip reload` | Reload `config.yml` and `messages.yml` |
 | `/syncequip demo ...` | Demo mode with husks, see [Demo mode](#demo-mode) |
 | `/syncequip help` | Show command help |
+
+## Squads in detail (v1.1)
+
+### Names
+
+A squad has a name. `/syncequip squad create NULL` makes squad `NULL`. Without a name the squad is called after
+you. Names use letters, digits, `-` and `_` (2 to 24 characters) and are not case sensitive. `squad join` takes the
+squad name or the leader's name.
+
+### Joining blocks
+
+A leader (or admin) can turn one exact block into a way to join, so dozens of players can join just by walking:
+
+```
+/se squad create NULL
+(stand on the block you want)
+/se squad pad set
+```
+
+From then on, anyone who steps onto **that block at those coordinates** joins `NULL` and sees `You joined squad NULL`.
+Other blocks of the same material do nothing.
+
+| Command | What it does |
+|---|---|
+| `/se squad pad set [squad]` | Register the solid block under your feet (replaces the old one) |
+| `/se squad pad remove [squad]` | Remove the joining block |
+| `/se squad pad info [squad]` | Show its world, coordinates and whether it is on (members may look) |
+| `/se squad pad enable [squad]` / `disable [squad]` | Turn joining by stepping on or off |
+
+The optional `[squad]` is for administrators (`syncequip.admin`), who can manage any squad, running or saved.
+
+- Nobody is ever moved out of a squad. A player already in another squad is told once how to leave, then left alone.
+  Full squads turn people away with one message, and the same player is not told again for a few seconds.
+- Only block changes are looked at, so head turns and small movements cost nothing. Worlds without a pad skip the
+  lookup entirely.
+- If the block is broken, blown up or moved by a piston, the registration is removed and the leader is told.
+- Pads and the rest of a squad's settings are saved (see below) and come back after a restart.
+
+### Speed
+
+`/se squad speed 4` sets the ticks between pieces for **this squad**, 1 to 10. It applies to equipping and
+unequipping. `/se squad speed` shows the current value and `/se squad speed default` goes back to the global
+default (`equipment.interval-ticks`). The speed cannot change while a sequence is running. Every member still gets
+each piece on the same server tick.
+
+### Group unequip
+
+`/se squad unequip` makes every member take their loadout off in reverse order, one piece at a time, on shared
+ticks, with the same sounds at a lower pitch. Items go back into the inventory. Nothing is dropped or deleted, and
+the selected hotbar slot is never touched.
+
+- Before starting, each member's inventory is checked for room. A member without space is left out with an
+  explanation to them and to the leader, and keeps their gear on.
+- Members with nothing to take off are skipped. Equip and unequip cannot overlap.
+- `/se unequip` does the same for yourself.
+
+### Loadouts
+
+A loadout says which real items each slot needs. The default needs a sword in the main hand, a shield in the
+offhand and any helmet, chestplate, leggings and boots. Sequence order is boots, leggings, chestplate, helmet,
+shield, sword.
+
+```
+/se squad loadout show
+/se squad loadout set mainhand netherite_sword
+/se squad loadout set offhand totem_of_undying
+/se squad loadout set helmet netherite        (armor: a material alone, a full item name, any or none)
+/se squad loadout set boots none              (none = this slot is not used at all)
+/se squad loadout optional mainhand on        (missing or blocked: skipped quietly)
+/se squad loadout order offhand helmet        (these go first, the rest follow)
+/se squad loadout reset
+```
+
+Values: `any`, `none`, `any_sword` and `any_axe` (main hand), or an item name (`netherite_helmet`, `trident`, `bow`,
+`crossbow`, `ender_pearl`, ...). Tab completion suggests them.
+
+How items are used:
+
+- Real inventory items only. Nothing is created.
+- Something already in the right slot that the loadout accepts counts as done (a held sword needs no move).
+- A missing item follows `equipment.missing-item-policy` unless the slot is optional. The leader sees who is
+  missing what.
+- The main hand is the slot the player has selected. A sword from the inventory moves into it if it is empty. If it
+  holds something else, the squad cannot start (or with `equipment.require-empty-slots: false` the two items swap).
+  The selected slot never changes.
+- Slots set to `none` are left out of validation, steps and sounds.
+- Each squad has its own loadout. Solo sequences keep the original armor and shield behaviour unless
+  `loadout.solo-uses-default: true`.
+
+### Saved settings
+
+`plugins/SyncEquip/squads.yml` keeps, per squad: its name, the owner's unique id, its speed, loadout and joining
+block (world and three numbers). Members, names of players and addresses are never saved. Squads that only use the
+defaults are not saved. After a restart the squad is not running until its owner runs `/se squad create NULL`, and
+then its saved settings come back. Nobody else can take over the name unless they are an administrator.
+`/se squad disband` ends a squad and deletes its saved settings.
+
+### Permissions for large sessions
+
+Members need no special rights: they can join, leave, look at `squad info`, `loadout show` and `pad info`, and take
+part in sequences. Leaders (`syncequip.squad.manage` and `syncequip.squad.start`, both given by default) configure
+and run their squad. Administrators (`syncequip.admin`) can do all of it for any squad.
 
 ## Demo mode
 
@@ -192,11 +302,12 @@ Configuration (`demo:` section in `config.yml`): `interval-ticks`, `countdown-se
 | `syncequip.use` | everyone | `/syncequip solo`, `/syncequip settings` |
 | `syncequip.hotkey` | everyone | The sneak + swap trigger (if enabled in config) |
 | `syncequip.squad` | everyone | All `/syncequip squad …` management commands |
-| `syncequip.squad.start` | everyone | Starting and cancelling the sequence of a squad you lead |
+| `syncequip.squad.start` | everyone | Starting, cancelling and unequipping the squad you lead |
+| `syncequip.squad.manage` | everyone | Changing the speed, loadout and joining block of a squad you lead |
 | `syncequip.demo` | op | `/syncequip demo ...` (spawn husks and run the demo sequence) |
 | `syncequip.reload` | op | `/syncequip reload` |
 | `syncequip.bypass.cooldown` | op | Ignore the cooldown |
-| `syncequip.admin` | op | Start or cancel the sequence of any squad you are in; includes reload and cooldown bypass |
+| `syncequip.admin` | op | Configure and run any squad, plus reload and cooldown bypass |
 
 ## Configuration
 

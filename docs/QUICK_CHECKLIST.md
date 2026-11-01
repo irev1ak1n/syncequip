@@ -18,6 +18,21 @@ the top inventory row, and nothing worn. Keep slot 1 selected.
 - [ ] `/syncequip demo repeat 3` runs three times with a short pause
 - [ ] `/syncequip demo clear` removes them all, and nothing is dropped
 
+## v1.1 squad features (two or more players)
+
+- [ ] Leader: `/se squad create NULL`, stand on a block, `/se squad pad set`. You get "Joining block for NULL set"
+- [ ] A friend walks onto that block and sees "You joined squad NULL" (once, no spam)
+- [ ] Walking over a different stone block does nothing, and so does the block next to it
+- [ ] `/se squad pad info` shows the coordinates. `pad disable` stops joining, `pad enable` restores it
+- [ ] Break the block: the leader is told and the pad is gone
+- [ ] `/function syncequip_test:kit_all`, then `/se squad speed 4` and `/se squad start`. Pieces are visibly slower and in step
+- [ ] `/se squad unequip`: sword, shield, helmet, chestplate, leggings, boots leave one by one, together, and land in the inventory
+- [ ] Fill one friend's inventory first. They are left out with a message and keep their gear on
+- [ ] `/se squad loadout set offhand totem_of_undying` (give totems first): the totem goes to the offhand instead of the shield
+- [ ] `/se squad loadout set helmet none` then start: no helmet step happens
+- [ ] `/se squad loadout reset` goes back to the default
+- [ ] Restart the server, `/se squad create NULL` again: the speed, loadout and joining block come back
+
 ## Solo
 
 - [ ] `/syncequip solo` puts the pieces on one at a time, in the order boots, leggings, chestplate, helmet, shield

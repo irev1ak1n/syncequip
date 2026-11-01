@@ -53,6 +53,14 @@ join. Bot1 (made operator) spawns the husks and runs the sequence, and Bot2 watc
 
 It cannot show how the armor looks or sounds. The run uses `difficulty=easy` because husks are deleted on Peaceful.
 
+## v1.1 check
+
+`node v11-test.js [bots]` (default 10, 3 to 20) makes bots physically walk onto a registered joining block and then
+checks, on the real server: squad join by walking, a decoy stone block, equip at speed 4 with the default loadout
+(sword, shield, four armor pieces) on one tick, group unequip in reverse order on one tick, a custom
+chestplate-and-shield loadout, and that the pad, speed and loadout come back after a real server restart. It uses
+peaceful difficulty so mobs cannot kill the bots. Bots cannot see or hear, so looks and sounds are still untested.
+
 ## Safety
 
 - The bot server is on **offline mode on purpose**, because bots have no Minecraft account. It is only safe

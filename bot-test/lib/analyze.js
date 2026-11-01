@@ -2,6 +2,8 @@
 
 const DEBUG_LINE = /\[debug\] sequence #(\d+) step (\d+)\/(\d+) (\w+)\s+player=(\S+)\s+scheduled=(\d+) actual=(\d+) drift=(-?\d+) result=(\w+)/
 
+// Results that count as a step done: a piece moved, was already in place, or came off.
+const DONE = new Set(['EQUIPPED', 'ALREADY', 'REMOVED', 'NOTHING'])
 const STEP_NAMES = ['BOOTS', 'LEGGINGS', 'CHESTPLATE', 'HELMET', 'SHIELD']
 
 /** Server side proof: parses the plugin's own debug log lines. */
@@ -10,7 +12,7 @@ function analyzeServerTicks (lines, expectedPlayers, interval = 2) {
   for (const line of lines) {
     const m = DEBUG_LINE.exec(line)
     if (!m) continue
-    rows.push({ seq: +m[1], step: +m[2], name: m[4], player: m[5], scheduled: +m[6], actual: +m[7], drift: +m[8], result: m[9] })
+    rows.push({ seq: +m[1], step: +m[2], total: +m[3], name: m[4], player: m[5], scheduled: +m[6], actual: +m[7], drift: +m[8], result: m[9] })
   }
   const bySeq = new Map()
   for (const r of rows) {
@@ -20,7 +22,8 @@ function analyzeServerTicks (lines, expectedPlayers, interval = 2) {
   const sequences = []
   for (const [seq, group] of bySeq) {
     const steps = []
-    for (let step = 1; step <= STEP_NAMES.length; step++) {
+    const total = Math.max(...group.map(r => r.total))
+    for (let step = 1; step <= total; step++) {
       const g = group.filter(r => r.step === step)
       if (!g.length) continue
       const ticks = [...new Set(g.map(r => r.actual))]
@@ -31,21 +34,21 @@ function analyzeServerTicks (lines, expectedPlayers, interval = 2) {
         ticks,
         sameTick: ticks.length === 1,
         maxDrift: Math.max(...g.map(r => r.drift)),
-        allEquipped: g.every(r => r.result === 'EQUIPPED')
+        allEquipped: g.every(r => DONE.has(r.result))
       })
     }
     const firstTick = steps.length ? steps[0].ticks[0] : 0
     for (const s of steps) s.offset = s.ticks[0] - firstTick
-    sequences.push({ seq, players: new Set(group.map(r => r.player)).size, steps })
+    sequences.push({ seq, total, players: new Set(group.map(r => r.player)).size, steps })
   }
   const seq = sequences[0]
   const checks = []
   checks.push(['a sequence was logged', !!seq])
   if (seq) {
     checks.push([`all ${expectedPlayers} bots took part`, seq.players === expectedPlayers])
-    checks.push(['all five steps ran', seq.steps.length === 5])
+    checks.push([`all ${seq.total} steps ran`, seq.steps.length === seq.total])
     checks.push(['every step ran on a single server tick for all bots', seq.steps.every(s => s.sameTick)])
-    checks.push([`step offsets are ${[0, 1, 2, 3, 4].map(i => i * interval).join(', ')} ticks`, seq.steps.map(s => s.offset).join(',') === [0, 1, 2, 3, 4].map(i => i * interval).join(',')])
+    checks.push([`step offsets are ${Array.from({ length: seq ? seq.total : 5 }, (_, i) => i * interval).join(', ')} ticks`, seq.steps.map(s => s.offset).join(',') === Array.from({ length: seq.total }, (_, i) => i * interval).join(',')])
     checks.push(['no drift (server kept up)', seq.steps.every(s => s.maxDrift === 0)])
     checks.push(['every step reported EQUIPPED', seq.steps.every(s => s.allEquipped)])
   }

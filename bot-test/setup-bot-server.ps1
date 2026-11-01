@@ -33,6 +33,7 @@ Copy-Item $plugin "$Dir\plugins\" -Force
 Copy-Item (Join-Path $repo 'testing\datapack\syncequip_test') "$Dir\world\datapacks\" -Recurse -Force
 'eula=true' | Set-Content "$Dir\eula.txt"
 "settings:`n  connection-throttle: -1" | Set-Content "$Dir\bukkit.yml"
+"advancements:`n  disable-saving: true`n  disabled:`n  - '*'" | Set-Content "$Dirspigot.yml"
 "debug:`n  log-sequence-ticks: true" | Set-Content "$Dir\plugins\SyncEquip\config.yml"
 
 @'
