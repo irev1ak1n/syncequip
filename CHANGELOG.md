@@ -21,6 +21,9 @@ New
 
 Changed
 
+- **Help menu.** `/syncequip help [page|name]` is now a paged guide with clickable Previous and Next, one topic per
+  page (basics, squads, sequences, joining blocks, loadouts, plus demo and admin pages for those allowed to use them). It
+  lists every v1.1 command with its real syntax, and a test checks the help against tab completion.
 - **Squads now need a sword by default.** The default loadout is sword, shield and four armor pieces. A held sword
   needs no move. To keep the old behaviour set `loadout.default.mainhand: none` in config.yml.
 - A squad's sequence has up to six steps (the sword is last), so the default squad run lasts 10 ticks at speed 2.

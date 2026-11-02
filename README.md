@@ -153,7 +153,7 @@ Base command: `/syncequip` (aliases `/se`, `/sequip`). Every subcommand has tab 
 | `/syncequip settings` | Show the settings currently in effect |
 | `/syncequip reload` | Reload `config.yml` and `messages.yml` |
 | `/syncequip demo ...` | Demo mode with husks, see [Demo mode](#demo-mode) |
-| `/syncequip help` | Show command help |
+| `/syncequip help [page or name]` | Paged help: basics, squads, sequences, pads, loadout (and demo, admin where allowed) |
 
 ## Squads in detail (v1.1)
 
