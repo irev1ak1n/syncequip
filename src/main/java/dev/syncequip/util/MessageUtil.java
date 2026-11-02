@@ -48,6 +48,11 @@ public final class MessageUtil {
         return Placeholder.unparsed(name, String.valueOf(value));
     }
 
+    /** Placeholder that is inserted before parsing, so it can sit inside a tag such as a click command. */
+    public static TagResolver parsed(String name, Object value) {
+        return Placeholder.parsed(name, String.valueOf(value));
+    }
+
     public static TagResolver ph(String name, Component value) {
         return Placeholder.component(name, value);
     }

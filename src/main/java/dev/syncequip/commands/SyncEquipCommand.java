@@ -12,6 +12,7 @@ import dev.syncequip.squad.SquadProfile;
 import dev.syncequip.squad.SquadSequenceController;
 import dev.syncequip.synchronization.RemovalReason;
 import dev.syncequip.util.MessageUtil;
+import net.kyori.adventure.text.Component;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import java.util.ArrayList;
@@ -59,7 +60,7 @@ public final class SyncEquipCommand implements BasicCommand {
     public void handle(CommandSender sender, String[] args) {
         MessageUtil messages = plugin.messages();
         if (args.length == 0) {
-            sendHelp(sender);
+            sendHelp(sender, null);
             return;
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
@@ -69,7 +70,7 @@ public final class SyncEquipCommand implements BasicCommand {
             case "demo" -> demo(sender, args);
             case "settings" -> settings(sender);
             case "reload" -> reload(sender);
-            case "help" -> sendHelp(sender);
+            case "help" -> sendHelp(sender, args.length > 1 ? args[1] : null);
             default -> messages.send(sender, "command.unknown", ph("input", args[0]));
         }
     }
@@ -380,16 +381,83 @@ public final class SyncEquipCommand implements BasicCommand {
     }
 
 
-    private void sendHelp(CommandSender sender) {
+    private static final List<String> HELP_PAGES = List.of("basics", "squads", "sequences", "pads", "loadout", "demo",
+            "admin");
+
+    /** The help pages this sender may use, in order. Pages about commands they cannot run are left out. */
+    private List<String> helpPages(CommandSender sender) {
+        List<String> pages = new ArrayList<>();
+        for (String id : HELP_PAGES) {
+            boolean visible = switch (id) {
+                case "squads", "sequences", "pads", "loadout" -> sender.hasPermission(PERMISSION_SQUAD);
+                case "demo" -> sender.hasPermission(PERMISSION_DEMO);
+                case "admin" -> sender.hasPermission(PERMISSION_RELOAD) || SquadSequenceController.isAdmin(sender);
+                default -> true;
+            };
+            if (visible) {
+                pages.add(id);
+            }
+        }
+        return pages;
+    }
+
+    private static int helpPageIndex(List<String> pages, String input) {
+        String word = switch (input.toLowerCase(Locale.ROOT)) {
+            case "squad" -> "squads";
+            case "pad", "joining", "block", "blocks" -> "pads";
+            case "loadouts" -> "loadout";
+            case "equip", "unequip", "speed", "sequence" -> "sequences";
+            case "reload" -> "admin";
+            default -> input.toLowerCase(Locale.ROOT);
+        };
+        for (int i = 0; i < pages.size(); i++) {
+            if (pages.get(i).startsWith(word)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** One page per topic, so each fits in the chat window. {@code page} is a number or a topic name. */
+    private void sendHelp(CommandSender sender, String page) {
         MessageUtil messages = plugin.messages();
-        messages.sendPlain(sender, "help.header");
-        messages.sendList(sender, "help.lines");
+        List<String> pages = helpPages(sender);
+        int index = 0;
+        if (page != null) {
+            Integer number = parseInt(page);
+            index = number != null ? number - 1 : helpPageIndex(pages, page);
+            if (index < 0 || index >= pages.size()) {
+                messages.send(sender, "help.unknown-page", ph("input", page), ph("count", pages.size()),
+                        ph("names", String.join(", ", pages)));
+                return;
+            }
+        }
+        String id = pages.get(index);
+        messages.sendPlain(sender, "help.header", ph("title", messages.raw("help.pages." + id + ".title")),
+                ph("page", index + 1), ph("pages", pages.size()));
+        messages.sendList(sender, "help.pages." + id + ".lines");
+        Component previous = index > 0 ? messages.render("help.prev", MessageUtil.parsed("target", index))
+                : messages.render("help.prev-none");
+        Component next = index < pages.size() - 1 ? messages.render("help.next", MessageUtil.parsed("target", index + 2))
+                : messages.render("help.next-none");
+        messages.sendPlain(sender, "help.footer", ph("prev", previous), ph("next", next));
     }
 
     public List<String> complete(CommandSender sender, String[] args) {
         if (args.length <= 1) {
             String prefix = args.length == 0 ? "" : args[0];
             return filter(ROOT.stream().filter(sub -> canSee(sender, sub)), prefix);
+        }
+        if (args[0].equalsIgnoreCase("help")) {
+            if (args.length != 2) {
+                return List.of();
+            }
+            List<String> pages = helpPages(sender);
+            List<String> options = new ArrayList<>(pages);
+            for (int i = 1; i <= pages.size(); i++) {
+                options.add(String.valueOf(i));
+            }
+            return filter(options.stream(), args[1]);
         }
         if (args[0].equalsIgnoreCase("demo") && sender.hasPermission(PERMISSION_DEMO)) {
             if (args.length == 2) {

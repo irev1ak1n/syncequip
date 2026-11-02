@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
-import java.nio.file.Files;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
@@ -18,7 +17,7 @@ class MessagesTest extends PluginTestBase {
         old.set("demo", null);
         old.set("squad.created", null);
         old.save(file);
-        assertTrue(Files.readString(file.toPath()).indexOf("demo:") < 0, "test setup removed the section");
+        assertFalse(YamlConfiguration.loadConfiguration(file).isSet("demo.spawned"), "test setup removed the section");
         plugin.messages().load();
 
         PlayerMock player = server.addPlayer("Steve");

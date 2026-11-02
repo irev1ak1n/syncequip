@@ -144,7 +144,9 @@ class CommandTest extends PluginTestBase {
         assertTrue(received(player, "Unknown subcommand dance"));
         run(player);
         List<String> help = messages(player);
-        assertTrue(help.stream().anyMatch(m -> m.contains("/syncequip squad start")));
+        assertTrue(help.stream().anyMatch(m -> m.contains("/syncequip solo")));
+        run(player, "help", "3");
+        assertTrue(messages(player).stream().anyMatch(m -> m.contains("/syncequip squad start")));
     }
 
     @Test

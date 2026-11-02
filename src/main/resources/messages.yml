@@ -98,27 +98,77 @@ reload:
   warning-line: ' <gray>• <warning>'
 
 help:
-  header: '<gold>SyncEquip commands:'
-  lines:
-    - ' <white>/syncequip solo</white> <gray>- equip your armor and shield in sequence'
-    - ' <white>/syncequip unequip</white> <gray>- take them off again in reverse order'
-    - ' <white>/syncequip squad create [name]</white> <gray>- create a squad'
-    - ' <white>/syncequip squad invite \<player></white> <gray>- invite a player'
-    - ' <white>/syncequip squad join \<squad or leader></white> <gray>- join a squad you were invited to'
-    - ' <white>/syncequip squad leave</white> <gray>- leave your squad'
-    - ' <white>/syncequip squad list</white> <gray>- list squad members'
-    - ' <white>/syncequip squad info</white> <gray>- show speed, loadout and joining block'
-    - ' <white>/syncequip squad start</white> <gray>- start the synchronized sequence (leader)'
-    - ' <white>/syncequip squad unequip</white> <gray>- everyone takes their gear off together (leader)'
-    - ' <white>/syncequip squad cancel</white> <gray>- cancel the running sequence (leader)'
-    - ' <white>/syncequip squad speed [ticks|default]</white> <gray>- ticks between pieces, 1 to 10 (leader)'
-    - ' <white>/syncequip squad pad set|remove|info|enable|disable</white> <gray>- joining block (leader)'
-    - ' <white>/syncequip squad loadout show|reset|set|optional|order</white> <gray>- required items (leader)'
-    - ' <white>/syncequip squad transfer \<player></white> <gray>- make another member the leader'
-    - ' <white>/syncequip squad disband</white> <gray>- end the squad and forget its settings (leader)'
-    - ' <white>/syncequip settings</white> <gray>- show the active settings'
-    - ' <white>/syncequip reload</white> <gray>- reload the configuration (admin)'
-
+  header: '<gold>SyncEquip help <dark_gray>|</dark_gray> <white><title></white> <gray>(page <page> of <pages>)'
+  footer: ' <prev> <dark_gray>|</dark_gray> <gray>/syncequip help \<page or name></gray> <dark_gray>|</dark_gray> <next>'
+  prev: '<click:run_command:/syncequip help <target>><aqua>◀ Previous</aqua></click>'
+  prev-none: '<dark_gray>◀ Previous'
+  next: '<click:run_command:/syncequip help <target>><aqua>Next ▶</aqua></click>'
+  next-none: '<dark_gray>Next ▶'
+  unknown-page: '<red>There is no help page <white><input></white>. Try a number from 1 to <count>, or one of: <white><names></white>.'
+  pages:
+    basics:
+      title: 'Basics'
+      lines:
+        - ' <white>/syncequip solo</white> <gray>- equip your own armor and shield, one piece at a time'
+        - ' <white>/syncequip unequip</white> <gray>- take them off again, in reverse order'
+        - ' <white>/syncequip settings</white> <gray>- show the settings in effect'
+        - ' <white>/syncequip help [page|name]</white> <gray>- this help'
+        - ' <gray>Shortcuts: <white>/se</white> and <white>/sequip</white> work like <white>/syncequip</white>. Press Tab to complete.'
+        - ' <gray>Next pages: <white>squads</white>, <white>sequences</white>, <white>pads</white>, <white>loadout</white>.'
+    squads:
+      title: 'Squads'
+      lines:
+        - ' <white>/syncequip squad create [name]</white> <gray>- create a squad and lead it (default name: yours)'
+        - ' <white>/syncequip squad invite \<player></white> <gray>- invite a player (leader)'
+        - ' <white>/syncequip squad join \<squad or leader></white> <gray>- join a squad you were invited to'
+        - ' <white>/syncequip squad leave</white> <gray>- leave your squad'
+        - ' <white>/syncequip squad list</white> <gray>- list the members'
+        - ' <white>/syncequip squad info</white> <gray>- members, speed, loadout and joining block'
+        - ' <white>/syncequip squad transfer \<player></white> <gray>- make another member the leader'
+        - ' <white>/syncequip squad disband</white> <gray>- end the squad and delete its saved settings (leader)'
+    sequences:
+      title: 'Squad sequences'
+      lines:
+        - ' <white>/syncequip squad start</white> <gray>- everyone equips their loadout together (leader)'
+        - ' <white>/syncequip squad unequip</white> <gray>- everyone takes it off together, in reverse order (leader)'
+        - ' <white>/syncequip squad cancel</white> <gray>- stop the running sequence (leader)'
+        - ' <white>/syncequip squad speed [1-10|default]</white> <gray>- ticks between pieces for this squad (leader)'
+        - ' <gray>Every member gets each piece on the same server tick. Speed applies to equipping and unequipping.'
+    pads:
+      title: 'Joining blocks'
+      lines:
+        - ' <white>/syncequip squad pad set</white> <gray>- make the block under your feet the joining block (leader)'
+        - ' <white>/syncequip squad pad remove</white> <gray>- remove it'
+        - ' <white>/syncequip squad pad info</white> <gray>- show where it is and whether it is on'
+        - ' <white>/syncequip squad pad enable</white> <gray>- let stepping on it join the squad'
+        - ' <white>/syncequip squad pad disable</white> <gray>- pause joining without removing it'
+        - ' <gray>Anyone who steps on that exact block joins the squad. Admins can add a squad name to any pad command.'
+    loadout:
+      title: 'Loadouts'
+      lines:
+        - ' <white>/syncequip squad loadout show</white> <gray>- what each slot needs and the order'
+        - ' <white>/syncequip squad loadout set \<slot> \<value> [optional]</white> <gray>- change one slot (leader)'
+        - ' <white>/syncequip squad loadout optional \<slot> \<on|off></white> <gray>- skip the slot quietly when missing'
+        - ' <white>/syncequip squad loadout order \<slot> ...</white> <gray>- these slots go first, the rest follow'
+        - ' <white>/syncequip squad loadout reset</white> <gray>- back to the server default'
+        - ' <gray>Slots: <white>mainhand offhand helmet chestplate leggings boots</white>'
+        - ' <gray>Values: <white>any</white>, <white>none</white>, <white>any_sword</white> and <white>any_axe</white> (main hand), or an item such as <white>netherite_sword</white>, <white>totem_of_undying</white>, <white>netherite</white> (armor).'
+    demo:
+      title: 'Demo mode'
+      lines:
+        - ' <white>/syncequip demo spawn \<count></white> <gray>- a row of 1 to 20 husks in front of you'
+        - ' <white>/syncequip demo start</white> <gray>- equip them together after a countdown'
+        - ' <white>/syncequip demo repeat \<times></white> <gray>- run it several times, for recording'
+        - ' <white>/syncequip demo stop</white> <gray>- stop a running demo'
+        - ' <white>/syncequip demo reset</white> <gray>- take their gear off so it can replay'
+        - ' <white>/syncequip demo clear</white> <gray>- remove the husks'
+        - ' <white>/syncequip demo speed \<ticks></white> <gray>- ticks between pieces, 1 to 10'
+    admin:
+      title: 'Admin'
+      lines:
+        - ' <white>/syncequip reload</white> <gray>- reload config.yml and messages.yml'
+        - ' <gray>Administrators (<white>syncequip.admin</white>) can start, cancel, unequip and configure any squad,'
+        - ' <gray>and use <white>/syncequip squad info|pad|disband \<squad></white> on squads they are not in.'
 demo:
   usage: '<red>Usage: /syncequip demo \<spawn \<count>|start|repeat \<times>|stop|reset|clear|speed \<ticks>>'
   count-invalid: '<red>Choose a number of mobs from 1 to <max>.'
