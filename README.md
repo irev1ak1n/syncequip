@@ -526,7 +526,7 @@ inventory results with simulated players, and it cannot check animations or soun
 
 | Problem | Fix |
 |---|---|
-| `Cannot start: no room for the old Boots` | Free an inventory slot. Worn pieces are swapped back into the inventory. |
+| `Cannot start: already wearing Boots` | The old piece has nowhere to go. Free an inventory slot so the swap can happen. |
 | `Cannot start: missing Shield` | Put the item anywhere in your inventory **except** the slot you are holding. Or set `missing-item-policy: SKIP`. |
 | Sneak + F does nothing | Set `controls.sneak-swap-trigger: true`, check `syncequip.hotkey`, check the cooldown. Make sure you are actually sneaking when you press the key. |
 | Sounds play twice | Shouldn't happen. If another plugin also plays equip sounds, set `sounds.enabled: false`. |
