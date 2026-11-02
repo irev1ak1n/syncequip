@@ -66,6 +66,7 @@ public class SyncEquipPlugin extends JavaPlugin {
         squadStore = new SquadStore(getDataFolder().toPath().resolve("squads.yml"), getLogger());
         List<String> squadWarnings = new java.util.ArrayList<>();
         squads.loadProfiles(squadStore.load(squadWarnings));
+        squads.restoreSquads(squadWarnings);
         squadWarnings.forEach(w -> getLogger().warning(w));
         joinBlocks = new JoinBlockService(getServer(), squads, messages, this::settings, System::currentTimeMillis);
         joinBlocks.reindex();

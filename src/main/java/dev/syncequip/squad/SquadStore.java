@@ -20,8 +20,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 /**
  * Reads and writes {@code squads.yml}. Only what is needed to bring a squad back is stored: its name, the owner's
- * unique id, its speed and loadout, and its joining block as a world and three numbers. No names, addresses or
- * other player details are saved, and neither are the members.
+ * unique id, its member ids, its speed and loadout, and its joining block material and world. Players are only ever
+ * stored as unique ids. No names, addresses or other player details are saved.
  */
 public final class SquadStore {
 
@@ -62,6 +62,19 @@ public final class SquadStore {
                 continue;
             }
             SquadProfile profile = new SquadProfile(name, owner);
+            if (section.contains("members")) {
+                for (String raw : section.getStringList("members")) {
+                    UUID member = parseUuid(raw);
+                    if (member != null) {
+                        profile.memberSet().add(member);
+                    } else {
+                        warnings.add("squads.yml: " + name + " lists a member that is not a valid id and it was ignored");
+                    }
+                }
+            } else {
+                // Files from before members were saved: the owner is the squad's one member and leader.
+                profile.memberSet().add(owner);
+            }
             if (section.isInt("speed")) {
                 int speed = section.getInt("speed");
                 if (speed >= SequenceTimeline.MIN_INTERVAL && speed <= SequenceTimeline.MAX_INTERVAL) {
@@ -110,6 +123,7 @@ public final class SquadStore {
             String base = "squads." + profile.key();
             yaml.set(base + ".name", profile.name());
             yaml.set(base + ".owner", profile.owner().toString());
+            yaml.set(base + ".members", profile.memberSet().stream().map(UUID::toString).toList());
             if (profile.speed() != null) {
                 yaml.set(base + ".speed", profile.speed());
             }

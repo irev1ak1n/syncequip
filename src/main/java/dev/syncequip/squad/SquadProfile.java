@@ -2,6 +2,8 @@ package dev.syncequip.squad;
 
 import dev.syncequip.equipment.Loadout;
 import java.util.Locale;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 import org.bukkit.Material;
 
@@ -14,6 +16,7 @@ public final class SquadProfile {
 
     private final String name;
     private UUID owner;
+    private final Set<UUID> members = new LinkedHashSet<>();
     private Integer speed;
     private Loadout loadout;
     private Material blockMaterial;
@@ -79,7 +82,12 @@ public final class SquadProfile {
 
     /** Whether there is anything worth saving to disk. A plain squad with no overrides is not saved. */
     public boolean persistable() {
-        return speed != null || loadout != null || blockMaterial != null || legacyPad != null;
+        return speed != null || loadout != null || blockMaterial != null || legacyPad != null || !members.isEmpty();
+    }
+
+    /** The members of the live squad, in the order they joined. The squad and the saved file share this one set. */
+    Set<UUID> memberSet() {
+        return members;
     }
 
     void setOwner(UUID owner) {

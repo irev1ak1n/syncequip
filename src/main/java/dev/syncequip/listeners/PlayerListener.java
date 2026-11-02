@@ -31,7 +31,6 @@ public final class PlayerListener implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         plugin.sequenceService().scheduler().removeParticipant(player.getUniqueId(), RemovalReason.DISCONNECTED);
-        plugin.leaveSquad(player.getUniqueId(), RemovalReason.DISCONNECTED);
         plugin.cooldowns().clear(player.getUniqueId());
         plugin.joinBlocks().forget(player.getUniqueId());
     }

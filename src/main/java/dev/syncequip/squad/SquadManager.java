@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
@@ -107,7 +108,42 @@ public final class SquadManager {
         byPlayer.put(leader, squad);
         byId.put(squad.id(), squad);
         byName.put(key, squad);
+        changed();
         return Status.OK;
+    }
+
+    /**
+     * Brings back the squads that were saved with members. A player already placed in an earlier squad is never moved,
+     * so a file that lists someone twice keeps the first squad.
+     */
+    public void restoreSquads(List<String> warnings) {
+        for (SquadProfile profile : profiles.values()) {
+            Set<UUID> saved = profile.memberSet();
+            if (saved.isEmpty() || byName.containsKey(profile.key())) {
+                continue;
+            }
+            saved.removeIf(id -> {
+                boolean taken = byPlayer.containsKey(id);
+                if (taken) {
+                    warnings.add("squads.yml: a player listed in " + profile.name() + " is already in "
+                            + byPlayer.get(id).name() + " and was not moved");
+                }
+                return taken;
+            });
+            if (saved.isEmpty()) {
+                continue;
+            }
+            UUID leader = saved.contains(profile.owner()) ? profile.owner() : saved.iterator().next();
+            if (!leader.equals(profile.owner())) {
+                profile.setOwner(leader);
+            }
+            Squad squad = Squad.restored(leader, profile);
+            for (UUID id : saved) {
+                byPlayer.put(id, squad);
+            }
+            byId.put(squad.id(), squad);
+            byName.put(profile.key(), squad);
+        }
     }
 
     public Status invite(UUID inviter, UUID target, int maxSize, long expiryMillis) {
@@ -167,6 +203,7 @@ public final class SquadManager {
         }
         squad.addMember(player);
         byPlayer.put(player, squad);
+        changed();
         return Status.OK;
     }
 
@@ -177,6 +214,7 @@ public final class SquadManager {
         }
         boolean wasLeader = squad.isLeader(player);
         squad.removeMember(player);
+        changed();
         if (squad.size() == 0) {
             removeLive(squad);
             if (!squad.profile().persistable()) {

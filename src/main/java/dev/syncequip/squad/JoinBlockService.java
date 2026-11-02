@@ -75,7 +75,6 @@ public final class JoinBlockService {
         UUID id = player.getUniqueId();
         Optional<Squad> squad = squads.squadByName(profile.name());
         if (squad.isEmpty()) {
-            notice(player, "block.inactive", ph("squad", profile.name()));
             return;
         }
         Optional<Squad> current = squads.squadOf(id);

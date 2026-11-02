@@ -207,7 +207,7 @@ class SquadSequenceTest extends PluginTestBase {
         assertEquals(5, countEquipped(squad.get(0)));
         assertEquals(0, countEquipped(squad.get(1)));
         assertEquals(5, countEquipped(squad.get(2)));
-        assertTrue(received(squad.get(2), "Soldier1 left the squad"));
+        assertTrue(plugin.squads().squadOf(squad.get(1).getUniqueId()).isPresent(), "still a member while offline");
     }
 
     @Test
@@ -228,11 +228,12 @@ class SquadSequenceTest extends PluginTestBase {
         List<PlayerMock> squad = formSquad(3);
         squad.getFirst().disconnect();
 
-        PlayerMock newLeader = squad.get(1);
-        assertTrue(received(newLeader, "Soldier1 is now the squad leader"));
-        assertTrue(plugin.squads().squadOf(newLeader.getUniqueId()).orElseThrow().isLeader(newLeader.getUniqueId()));
-        run(newLeader, "squad", "start");
-        assertEquals(1, plugin.sequenceService().scheduler().activeSequences().size());
+        PlayerMock other = squad.get(1);
+        var kept = plugin.squads().squadOf(squad.getFirst().getUniqueId()).orElseThrow();
+        assertTrue(kept.isLeader(squad.getFirst().getUniqueId()), "the leader keeps leading while offline");
+        assertEquals(3, kept.size());
+        run(other, "squad", "start");
+        assertTrue(received(other, "Only the squad leader"));
     }
 
     @Test

@@ -99,8 +99,6 @@ public final class SquadSequenceController {
         for (UUID id : squad.members()) {
             Player member = server.getPlayer(id);
             if (member == null) {
-                String name = server.getOfflinePlayer(id).getName();
-                problems.put(name == null ? id.toString() : name, messages.render("problem.offline"));
                 continue;
             }
             sequences.checkReady(member, config, loadout, true, false).ifPresentOrElse(

@@ -397,13 +397,13 @@ class BlockTest extends V11TestBase {
     }
 
     @Test
-    void aSquadThatIsNotRunningExplainsInsteadOfJoining() {
+    void aSquadWithNoMembersAtAllIsLeftAloneWithoutAnyMessage() {
         PlayerMock leader = leaderOf("NULL", "obsidian");
         run(leader, "squad", "leave");
         PlayerMock walker = server.addPlayer("Walker");
         stepOn(walker, put(Material.OBSIDIAN, 1, 64, 1));
         assertFalse(isMemberOf(walker, "NULL"));
-        assertTrue(received(walker, "not running"));
+        assertTrue(messages(walker).stream().noneMatch(m -> m.contains("not running") || m.contains("Ask its leader")));
     }
 
     @ParameterizedTest
@@ -475,8 +475,8 @@ class BlockTest extends V11TestBase {
         assertEquals(5, fresh.profile("null").orElseThrow().speed());
         assertTrue(fresh.blockFor(world.getUID(), Material.OBSIDIAN, false).isPresent());
         assertTrue(fresh.blockFor(world.getUID(), Material.STONE, false).isEmpty());
-        assertTrue(fresh.squadByName("NULL").isEmpty(), "not running until the owner brings it back");
-        assertEquals(SquadManager.Status.OK, fresh.create(leader.getUniqueId(), "null", false));
+        fresh.restoreSquads(warnings);
+        assertTrue(fresh.squadByName("NULL").isPresent(), "the squad and its leader come back by themselves");
         SquadManager again = new SquadManager(System::currentTimeMillis);
         again.loadProfiles(store.load(new ArrayList<>()));
         assertEquals(SquadManager.Status.NAME_RESERVED, again.create(UUID.randomUUID(), "NULL", false));
