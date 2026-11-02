@@ -236,35 +236,35 @@ public final class TourManager {
 
     private void buildSteps() {
         int total = 8;
-        add(stageTitle(1, total, "Player formation"), bots.size() + " test players line up in front of you",
+        add(stageTitle(1, total, "Formation"), bots.size() + " test players line up",
                 this::formUp, 80);
 
-        add(stageTitle(2, total, "Joining by block"), "Walking onto obsidian puts them in squad " + SQUAD,
+        add(stageTitle(2, total, "Join block"), "Step on obsidian to join " + SQUAD,
                 this::prepareJoining, 30);
         addAndWait("", "", this::walkOntoObsidian, this::everyoneJoined, 0, JOIN_TIMEOUT);
         add("", "", this::joinStragglers, 30);
 
-        equipAndWait(stageTitle(3, total, "Synchronized equipment"), "Netherite armor, sword and shield on the same ticks", 60);
+        equipAndWait(stageTitle(3, total, "Sync Equip"), "Armor, sword and shield in sync", 60);
 
         for (int speed : new int[] {1, 2, 4, 6}) {
-            unequipAndWait(stageTitle(4, total, "Speed comparison"), "Taking it off, then " + speed + " tick(s) per piece", 20);
+            unequipAndWait(stageTitle(4, total, "Speeds"), "Gear off, then " + speed + " tick(s) a piece", 20);
             add("", "", () -> run("squad speed " + speed), 5);
             equipAndWait(stageTitle(4, total, "Speed " + speed), speed + " tick(s) between pieces", 40);
         }
         add("", "", () -> run("squad speed default"), 5);
 
-        unequipAndWait(stageTitle(5, total, "Custom loadout"), "Totem in the offhand, an axe, and no helmet", 20);
+        unequipAndWait(stageTitle(5, total, "Loadout"), "Totem, axe and no helmet", 20);
         add("", "", this::customLoadout, 10);
         equipAndWait("", "", 60);
 
-        unequipAndWait(stageTitle(6, total, "Synchronized unequipping"), "Everyone takes their gear off together", 40);
+        unequipAndWait(stageTitle(6, total, "Unequip"), "Everyone takes gear off together", 40);
         add("", "", () -> run("squad loadout reset"), 10);
 
-        add(stageTitle(7, total, "Switching items"), "Holding an axe, a pickaxe, a totem or old boots",
+        add(stageTitle(7, total, "Swapping"), "Axe, pickaxe, totem, old boots",
                 this::awkwardInventories, 70);
-        equipAndWait("", "The required sword, shield and armor are swapped in", 60);
+        equipAndWait("", "Sword, shield and armor swapped in", 60);
 
-        unequipAndWait(stageTitle(8, total, "Final demonstration"), "One last full equip, perfectly in step", 20);
+        unequipAndWait(stageTitle(8, total, "Finale"), "One last full equip, in step", 20);
         add("", "", () -> {
             run("squad loadout reset");
             giveKits();
@@ -273,7 +273,7 @@ public final class TourManager {
     }
 
     private static String stageTitle(int number, int total, String name) {
-        return number + "/" + total + "  " + name;
+        return number + "/" + total + " — " + name;
     }
 
     // ------------------------------------------------------------------ actions

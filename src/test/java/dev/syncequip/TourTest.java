@@ -49,6 +49,31 @@ class TourTest extends V11TestBase {
         assertFalse(plugin.tour().running());
     }
 
+    /**
+     * Titles draw at 4x and subtitles at 2x the GUI scale. At 1080p with GUI scale 4 the screen is 480 units wide, so a
+     * title gets about 18 characters and a subtitle about 40. These limits leave a margin and also fit scale 3 and below.
+     */
+    @Test
+    void everyStageTitleAndSubtitleFitsOnScreen() {
+        run(viewer, "demo", "tour");
+        java.util.Set<String> titles = new java.util.LinkedHashSet<>();
+        for (int t = 0; t < 12000 && plugin.tour().running(); t++) {
+            server.getScheduler().performOneTick();
+            for (String line : messages(viewer)) {
+                int at = line.indexOf("[Tour] ");
+                if (at < 0) {
+                    continue;
+                }
+                String[] parts = line.substring(at + 7).split(" - ", 2);
+                assertTrue(parts[0].length() <= 16, "title too long: " + parts[0]);
+                assertTrue(parts.length == 2 && parts[1].length() <= 36, "subtitle too long: " + line);
+                assertTrue(parts[0].matches("[1-8]/8 — .+"), "stage numbering kept: " + parts[0]);
+                titles.add(parts[0].substring(0, 1));
+            }
+        }
+        assertEquals(8, titles.size(), "all eight stages were shown: " + titles);
+    }
+
     @Test
     void theWholeTourRunsAndEveryoneEndsFullyEquippedThenEverythingIsPutBack() {
         run(viewer, "demo", "tour");
