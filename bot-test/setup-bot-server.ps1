@@ -14,7 +14,7 @@ $jarName = 'paper-26.3-231.jar'
 $jarUrl = 'https://fill-data.papermc.io/v1/objects/a836a016be7ac52352eb3a1efb6857bb42ee73a6c78d46e292f7e87742edb0e6/paper-26.3-231.jar'
 $jarSha256 = 'a836a016be7ac52352eb3a1efb6857bb42ee73a6c78d46e292f7e87742edb0e6'
 $repo = Resolve-Path (Join-Path $PSScriptRoot '..')
-$plugin = Join-Path $repo 'build\libs\SyncEquip-1.0.0.jar'
+$plugin = Join-Path $repo 'build\libs\SyncEquip-1.1.2.jar'
 
 if (-not (Test-Path $plugin)) { throw "Build the plugin first (gradlew build). Missing $plugin" }
 if (-not $AcceptEula) { throw 'Pass -AcceptEula to confirm you accept the Minecraft EULA (https://aka.ms/MinecraftEULA).' }

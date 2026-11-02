@@ -2,24 +2,35 @@
 
 SyncEquip is a Minecraft Java plugin that lets players synchronize armor and weapon equipping across entire squads. Built as a personal Java development project, it explores multiplayer synchronization, inventory management, and customizable equipment mechanics while making coordinated gameplay more fun and creative.
 
+## Download
+
+**[Download SyncEquip from GitHub Releases](https://github.com/irev1ak1n/syncequip/releases/latest)**
+
+| | |
+|---|---|
+| Version | 1.1.2 |
+| Server | [Paper](https://papermc.io/) **26.3** (Minecraft Java Edition 26.3) |
+| Java | 25, as required by Paper 26.x |
+| Players | Any vanilla Java client for that version. No mods or resource packs |
+
+Only Paper 26.3 is supported and tested. Spigot, other Minecraft versions and Folia are not supported.
+
 ## Installation
 
-**You need:** a [Paper](https://papermc.io/) **26.3** server running **Java 25**. Players need no mods or resource packs. Folia is not supported.
+1. Download `SyncEquip-1.1.2.jar` from the [latest release](https://github.com/irev1ak1n/syncequip/releases/latest).
+2. Put the file in your server's `plugins` folder.
+3. Restart the server.
 
-1. Get the plugin jar, `SyncEquip-1.0.0.jar`. Either download it, or build it yourself:
-   ```
-   ./gradlew build
-   ```
-   (`gradlew.bat build` on Windows). The jar is written to `build/libs/SyncEquip-1.0.0.jar`.
-2. Stop your server, or leave it running if you will reload afterwards.
-3. Copy the jar into the server's `plugins/` folder.
-4. Start the server. SyncEquip creates `plugins/SyncEquip/` with `config.yml`, `messages.yml` and `squads.yml`.
-5. Check that SyncEquip appears in `/plugins` (green). In game, run `/syncequip help` to confirm it works.
-6. Optional: edit `config.yml` or `messages.yml`, then run `/syncequip reload`.
+That's it. SyncEquip has no dependencies and creates its own settings in `plugins/SyncEquip/`. To check it loaded, run
+`/plugins` (SyncEquip should be green) or `/syncequip help` in game.
 
-There are no other dependencies. To update, replace the jar while the server is stopped; your config and saved squads are kept.
+**Updating:** stop the server, delete the old SyncEquip jar from `plugins`, put the new one in, and start the server.
+Your settings and saved squads are kept. Edit `plugins/SyncEquip/config.yml` or `messages.yml` and run `/syncequip reload`
+to change settings without a restart.
 
-### Permissions
+Want to build it yourself? See the [Developer Guide](docs/DEVELOPER_GUIDE.md).
+
+## Permissions
 
 | Permission | Default | Grants |
 |---|---|---|

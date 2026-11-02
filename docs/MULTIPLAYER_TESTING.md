@@ -46,7 +46,7 @@ To update the plugin after code changes:
 ```bash
 cd D:\syncequip
 ./gradlew build
-copy build\libs\SyncEquip-1.0.0.jar D:\syncequip-test-server\plugins\
+copy build\libs\SyncEquip-1.1.2.jar D:\syncequip-test-server\plugins\
 ```
 
 Then `stop` and start the server again. `/reload` is not safe for plugins.
@@ -148,7 +148,7 @@ When reporting a problem, send the time, what you did, your ping and the relevan
 |---|---|
 | Server folder | `D:\syncequip-test-server` |
 | Start script | `D:\syncequip-test-server\start-server.bat` |
-| Plugin jar | `D:\syncequip-test-server\plugins\SyncEquip-1.0.0.jar` |
+| Plugin jar | `D:\syncequip-test-server\plugins\SyncEquip-1.1.2.jar` |
 | Plugin config | `D:\syncequip-test-server\plugins\SyncEquip\config.yml` |
 | World | `D:\syncequip-test-server\world` |
 

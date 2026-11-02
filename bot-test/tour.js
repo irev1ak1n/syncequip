@@ -22,7 +22,7 @@ const PORT = 25599
 const HOST = '127.0.0.1'
 const SERVER_DIR = path.resolve(process.env.BOT_SERVER_DIR || path.join(__dirname, '..', '..', 'syncequip-bot-server'))
 const RUN_DIR = path.join(__dirname, '.run')
-const JAR = path.join(__dirname, '..', 'build', 'libs', 'SyncEquip-1.0.0.jar')
+const JAR = path.join(__dirname, '..', 'build', 'libs', 'SyncEquip-1.1.2.jar')
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 async function main () {
@@ -35,7 +35,7 @@ async function main () {
   if (!fs.existsSync(JAR)) throw new Error('Build the plugin first (gradlew jar).')
   const mineflayer = require('@wp2508/mineflayer')
 
-  fs.copyFileSync(JAR, path.join(SERVER_DIR, 'plugins', 'SyncEquip-1.0.0.jar'))
+  fs.copyFileSync(JAR, path.join(SERVER_DIR, 'plugins', 'SyncEquip-1.1.2.jar'))
   fs.writeFileSync(path.join(RUN_DIR, 'harness.pid'), String(process.pid))
   const server = new TestServer({ dir: SERVER_DIR, jar: 'paper-26.3-231.jar', port: PORT, pidFile: path.join(RUN_DIR, 'server.pid') })
   server.start()

@@ -17,7 +17,7 @@
 - Old coordinate pads found in `squads.yml` are retired. They never trigger, the log says so, and the leader is told once.
 - Config: `pads:` became `blocks:` (the old keys are still read if `blocks:` is missing).
 
-## 1.1 (the jar file is still called SyncEquip-1.0.0.jar, so it replaces the old one in place)
+## 1.1
 
 New
 
