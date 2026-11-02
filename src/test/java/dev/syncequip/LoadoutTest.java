@@ -170,7 +170,7 @@ class LoadoutTest {
         assertEquals(2, settings.intervalTicks());
         assertFalse(settings.soloUseDefaultLoadout());
         assertEquals(Loadout.legacy(ConfigManager.DEFAULT_ORDER), settings.soloLoadout(), "solo keeps the original behaviour");
-        assertTrue(settings.pads().enabled());
+        assertTrue(settings.blocks().enabled());
     }
 
     @Test

@@ -55,10 +55,10 @@ It cannot show how the armor looks or sounds. The run uses `difficulty=easy` bec
 
 ## v1.1 check
 
-`node v11-test.js [bots]` (default 10, 3 to 20) makes bots physically walk onto a registered joining block and then
-checks, on the real server: squad join by walking, a decoy stone block, equip at speed 4 with the default loadout
+`node v11-test.js [bots]` (default 10, 3 to 20) makes bots physically walk onto obsidian blocks at several different coordinates (the squad's joining block material) and then
+checks, on the real server: squad join by walking onto obsidian at four coordinates, a decoy stone block, equip at speed 4 with the default loadout
 (sword, shield, four armor pieces) on one tick, group unequip in reverse order on one tick, a custom
-chestplate-and-shield loadout, and that the pad, speed and loadout come back after a real server restart. It uses
+chestplate-and-shield loadout, and that the saved obsidian rule, speed and loadout come back after a real server restart (a block placed afterwards still works). It uses
 peaceful difficulty so mobs cannot kill the bots. Bots cannot see or hear, so looks and sounds are still untested.
 
 ## Safety

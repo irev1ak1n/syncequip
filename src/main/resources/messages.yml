@@ -53,7 +53,7 @@ sequence:
   shutdown-midway: '<yellow>SyncEquip is shutting down; <count> of <total> pieces were equipped, the rest are still in your inventory.'
 
 squad:
-  created: '<green>Squad created. Its name is <white><squad></white>. Invite players with <white>/syncequip squad invite \<player></white> or set a joining block with <white>/syncequip squad pad set</white>.'
+  created: '<green>Squad created. Its name is <white><squad></white>. Invite players with <white>/syncequip squad invite \<player></white> or let them join by stepping on a block: <white>/syncequip squad block set obsidian</white>.'
   already-in-squad: '<red>You are already in a squad. Leave it first with <white>/syncequip squad leave</white>.'
   not-in-squad: '<red>You are not in a squad.'
   leader-only: '<red>Only the squad leader can do that.'
@@ -77,6 +77,7 @@ squad:
   nothing-to-cancel: '<red>Your squad has no sequence running.'
   start-blocked: '<red>Cannot start: <count> member(s) are not ready:'
   start-blocked-line: ' <gray>•</gray> <white><player></white><gray>: <reason>'
+  legacy-pad: '<yellow>This squad had a joining block at a fixed spot (<where>). That kind was replaced by block materials, so it was retired. Use <white>/syncequip squad block set</white> instead.'
   restored: '<gray>Saved settings for <squad> were restored (speed, loadout, joining block).'
   name-invalid: '<red>Squad names use letters, digits, - and _, 2 to 24 characters.'
   name-taken: '<red>A squad called <squad> is already running.'
@@ -115,7 +116,7 @@ help:
         - ' <white>/syncequip settings</white> <gray>- show the settings in effect'
         - ' <white>/syncequip help [page|name]</white> <gray>- this help'
         - ' <gray>Shortcuts: <white>/se</white> and <white>/sequip</white> work like <white>/syncequip</white>. Press Tab to complete.'
-        - ' <gray>Next pages: <white>squads</white>, <white>sequences</white>, <white>pads</white>, <white>loadout</white>.'
+        - ' <gray>Next pages: <white>squads</white>, <white>sequences</white>, <white>blocks</white>, <white>loadout</white>.'
     squads:
       title: 'Squads'
       lines:
@@ -135,15 +136,17 @@ help:
         - ' <white>/syncequip squad cancel</white> <gray>- stop the running sequence (leader)'
         - ' <white>/syncequip squad speed [1-10|default]</white> <gray>- ticks between pieces for this squad (leader)'
         - ' <gray>Every member gets each piece on the same server tick. Speed applies to equipping and unequipping.'
-    pads:
+    blocks:
       title: 'Joining blocks'
       lines:
-        - ' <white>/syncequip squad pad set</white> <gray>- make the block under your feet the joining block (leader)'
-        - ' <white>/syncequip squad pad remove</white> <gray>- remove it'
-        - ' <white>/syncequip squad pad info</white> <gray>- show where it is and whether it is on'
-        - ' <white>/syncequip squad pad enable</white> <gray>- let stepping on it join the squad'
-        - ' <white>/syncequip squad pad disable</white> <gray>- pause joining without removing it'
-        - ' <gray>Anyone who steps on that exact block joins the squad. Admins can add a squad name to any pad command.'
+        - ' <white>/syncequip squad block set \\<block></white> <gray>- players who step on this kind of block join (leader)'
+        - ' <white>/syncequip squad block set</white> <gray>- use the block under your feet'
+        - ' <white>/syncequip squad block remove</white> <gray>- remove it'
+        - ' <white>/syncequip squad block info</white> <gray>- show the block and world'
+        - ' <white>/syncequip squad block enable</white> <gray>- let stepping on it join the squad'
+        - ' <white>/syncequip squad block disable</white> <gray>- pause joining without removing it'
+        - ' <gray>Example: <white>/syncequip squad block set obsidian</white>. Every obsidian block in that world works, wherever it is.'
+        - ' <gray>One material per squad per world. Admins can add a squad name at the end of any block command.'
     loadout:
       title: 'Loadouts'
       lines:
@@ -214,7 +217,7 @@ info:
   inactive: ' <gray>Not running right now. Its leader can bring it back with /syncequip squad create.'
   speed: ' <gray>Speed:</gray> <white><ticks> ticks</white> <gray>(about <ms> ms, <source>)'
   loadout: ' <gray>Loadout:</gray> <white><steps></white> <gray>(<source>)'
-  pad: ' <gray>Joining block:</gray> <white><pad>'
+  block: ' <gray>Joining block:</gray> <white><block>'
 
 speed:
   current: '<gray>Squad speed is <white><ticks> ticks</white> between pieces (about <ms> ms, <source>).'
@@ -222,11 +225,13 @@ speed:
   reset: '<green>Squad speed is back to the default of <white><ticks> ticks</white> (about <ms> ms).'
   invalid: '<red>Choose a whole number of ticks from 1 to 10, or <white>default</white>.'
 
-pad:
-  usage: '<red>Usage: /syncequip squad pad \<set|remove|info|enable|disable> [squad]'
-  set: '<green>Joining block for <white><squad></white> set at <white><where></white>. Players who step on it join the squad.'
-  not-solid: '<red>Stand on a solid block first.'
-  conflict: '<red>Another squad already uses that block as its joining block.'
+block:
+  usage: '<red>Usage: /syncequip squad block \<set|remove|info|enable|disable> [squad]. For example <white>/syncequip squad block set obsidian</white>.'
+  pad-retired: '<yellow>Joining pads were replaced by joining blocks. Use <white>/syncequip squad block set obsidian</white> (any solid block) so everyone who steps on that kind of block joins.'
+  set: '<green>Joining block for <white><squad></white> is now <white><material></white> in <white><world></white>. Anyone who steps onto <material> there joins the squad.'
+  invalid: '<red><reason>'
+  not-solid: '<red>That is not a solid block. Stand on a solid block or name one, for example <white>obsidian</white>.'
+  conflict: '<red>Another squad already uses <white><material></white> in <white><world></white>.'
   removed: '<green>Removed the joining block of <white><squad></white>.'
   none: '<yellow><squad> has no joining block.'
   enabled: '<green>Joining block of <white><squad></white> is on.'
@@ -237,7 +242,6 @@ pad:
   in-other-squad: '<yellow>You are in squad <current>. Use <white>/syncequip squad leave</white> to join <squad>.'
   full: '<red>Squad <squad> is full (max <max> players).'
   leader-count: '<gray><squad>: <white><count></white> members'
-  destroyed: '<yellow>The joining block of <squad> at <x> <y> <z> was destroyed, so it was removed. Set a new one with /syncequip squad pad set.'
 
 loadout:
   usage: '<red>Usage: /syncequip squad loadout \<show|reset|set|optional|order>'

@@ -1,6 +1,6 @@
 'use strict'
 /*
- * v1.1 check on the isolated Paper bot server: joining blocks, per-squad speed, group unequip and saved
+ * v1.1 check on the isolated Paper bot server: joining blocks (a block material, here obsidian, at several coordinates), per-squad speed, group unequip and saved
  * squad settings across a real server restart. Bots really walk onto the block.
  *
  * Usage: node v11-test.js [bots]   (default 10, 3 to 20)
@@ -98,44 +98,50 @@ async function main () {
     }
     const leader = bots[0]
     const base = leader.entity.position
-    const pad = { x: Math.floor(base.x) + 20, y: Math.floor(base.y) - 1, z: Math.floor(base.z) }
-    server.command(`setblock ${pad.x} ${pad.y} ${pad.z} minecraft:stone`)
-    server.command(`setblock ${pad.x + 5} ${pad.y} ${pad.z} minecraft:stone`)
-    await sleep(500)
-    // Leader stands on the block and registers it.
-    server.command(`tp Bot1 ${pad.x + 0.5} ${pad.y + 1} ${pad.z + 0.5}`)
+    const y0 = Math.floor(base.y) - 1
+    const pad = { x: Math.floor(base.x) + 20, y: y0, z: Math.floor(base.z) }
+    // Obsidian blocks at several different coordinates. A stone block of the same shape is the decoy.
+    const spots = [0, 14, 28, 42].map((dz, i) => ({ x: pad.x + i * 9, y: y0, z: pad.z + dz }))
+    for (const sp of spots) server.command(`setblock ${sp.x} ${sp.y} ${sp.z} minecraft:obsidian`)
+    server.command(`setblock ${pad.x + 5} ${pad.y} ${pad.z + 3} minecraft:stone`)
+    await sleep(600)
+    // The leader stands on one obsidian block and lets the plugin read the material under their feet.
+    server.command(`tp Bot1 ${spots[0].x + 0.5} ${y0 + 1} ${spots[0].z + 0.5}`)
     await sleep(1200)
     await say(leader, '/syncequip squad create NULL', /Squad created/, 'squad created')
-    await say(leader, '/syncequip squad pad set', /Joining block for NULL set/, 'pad set')
-    check('leader registered the block under their feet', true)
-    await say(leader, '/syncequip squad pad info', /Joining block of NULL/, 'pad info')
-    server.command(`tp Bot1 ${pad.x + 0.5} ${pad.y + 1} ${pad.z + 8.5}`)
+    await say(leader, '/syncequip squad block set', /is now obsidian/, 'block set')
+    check('leader set obsidian from the block under their feet', true)
+    await say(leader, '/syncequip squad block info', /Joining block of NULL/, 'block info')
+    server.command(`tp Bot1 ${pad.x - 10} ${y0 + 1} ${pad.z + 60}`)
 
     console.log('\nJoining by walking onto the block')
-    // A second stone block of the same material five blocks away must NOT work.
+    // Walking over stone (not the squad's material) must NOT work.
     const decoy = bots[1]
-    server.command(`tp ${decoy.username} ${pad.x + 1.5 + 4} ${pad.y + 1} ${pad.z + 0.5}`)
+    server.command(`tp ${decoy.username} ${pad.x + 1.5} ${pad.y + 1} ${pad.z + 3.5}`)
     await sleep(1000)
-    await decoy.lookAt(new Vec3(pad.x + 9.5, pad.y + 1, pad.z + 0.5), true)
+    await decoy.lookAt(new Vec3(pad.x + 9.5, pad.y + 1, pad.z + 3.5), true)
     decoy.setControlState('forward', true)
     await sleep(900)
     decoy.setControlState('forward', false)
     await sleep(600)
     server.command('execute if entity @a[name=Bot2]')
     const decoyJoined = decoy.chatLog?.some(m => /You joined/.test(m))
-    check('walking over a different stone block does not join', !decoyJoined)
+    check('walking over a stone block does not join', !decoyJoined)
 
     const joinedAt = []
-    for (const bot of bots.slice(1)) {
-      server.command(`tp ${bot.username} ${pad.x - 3.5} ${pad.y + 1} ${pad.z + 0.5}`)
+    const usedSpots = new Set()
+    for (const [k, bot] of bots.slice(1).entries()) {
+      const spot = spots[k % spots.length]
+      usedSpots.add(`${spot.x},${spot.z}`)
+      server.command(`tp ${bot.username} ${spot.x - 3.5} ${spot.y + 1} ${spot.z + 0.5}`)
       await sleep(700)
       const waiting = waitForMessage(bot, /You joined squad NULL/, 8000, 'join message')
-      await walkOver(bot, pad)
+      await walkOver(bot, spot)
       await waiting
       joinedAt.push(bot.username)
       server.command(`tp ${bot.username} ${pad.x - 20} ${pad.y + 1} ${pad.z + (bots.indexOf(bot) * 2)}`)
     }
-    check(`all ${BOTS - 1} bots joined squad NULL by walking onto the block`, joinedAt.length === BOTS - 1)
+    check(`all ${BOTS - 1} bots joined squad NULL by walking onto obsidian at ${usedSpots.size} different coordinates`, joinedAt.length === BOTS - 1 && usedSpots.size > 1)
     await sleep(500)
     const infoPromise = waitForMessage(leader, new RegExp(`${BOTS}/`), 6000, 'member count')
     leader.chat('/syncequip squad info')
@@ -195,27 +201,30 @@ async function main () {
     await sleep(700)
     await server.stop()
     const saved = fs.readFileSync(path.join(SERVER_DIR, 'plugins', 'SyncEquip', 'squads.yml'), 'utf8')
-    check('squads.yml was written with the pad, speed and loadout', /x: \d+/.test(saved) && /speed: 2/.test(saved) && /helmet: none/.test(saved))
+    check('squads.yml was written with the block material, speed and loadout', /material: obsidian/.test(saved) && /speed: 2/.test(saved) && /helmet: none/.test(saved))
     check('squads.yml holds no player names', !/Bot\d/.test(saved))
     server = await startServer()
     await server.waitForLine(/Enabling SyncEquip/, 1000, 'SyncEquip enabled again')
     const b1 = await connect(mineflayer, 'Bot1')
     const b2 = await connect(mineflayer, 'Bot2')
     bots = [b1, b2]
-    server.command(`tp Bot2 ${pad.x - 3.5} ${pad.y + 1} ${pad.z + 0.5}`)
+    server.command(`tp Bot2 ${spots[1].x - 3.5} ${spots[1].y + 1} ${spots[1].z + 0.5}`)
     await sleep(900)
     b2.chatLog = []
     b2.on('messagestr', m => b2.chatLog.push(m))
-    await walkOver(b2, pad)
+    await walkOver(b2, spots[1])
     await sleep(500)
-    check('before the leader returns, the pad says the squad is not running', b2.chatLog.some(m => /not running/.test(m)))
+    check('before the leader returns, the block says the squad is not running', b2.chatLog.some(m => /not running/.test(m)))
     await say(b1, '/syncequip squad create NULL', /restored/, 'squad restored')
     check('the leader got the saved squad back', true)
-    server.command(`tp Bot2 ${pad.x - 3.5} ${pad.y + 1} ${pad.z + 0.5}`)
-    await sleep(900)
+    // A block placed after the restart, somewhere new, works as well.
+    const fresh = { x: pad.x + 80, y: y0, z: pad.z + 5 }
+    server.command(`setblock ${fresh.x} ${fresh.y} ${fresh.z} minecraft:obsidian`)
+    server.command(`tp Bot2 ${fresh.x - 3.5} ${fresh.y + 1} ${fresh.z + 0.5}`)
+    await sleep(1200)
     const rejoin = waitForMessage(b2, /You joined squad NULL/, 8000, 'rejoin')
-    await walkOver(b2, pad)
-    await rejoin.then(() => check('the saved joining block works again after the restart', true), () => check('the saved joining block works again after the restart', false))
+    await walkOver(b2, fresh)
+    await rejoin.then(() => check('the saved obsidian rule works after the restart, on a block placed afterwards', true), () => check('the saved obsidian rule works after the restart, on a block placed afterwards', false))
     const speedShown = waitForMessage(b1, /2 ticks/, 5000, 'speed')
     b1.chat('/syncequip squad speed')
     await speedShown.then(() => check('the saved speed (2 ticks) came back', true), () => check('the saved speed (2 ticks) came back', false))

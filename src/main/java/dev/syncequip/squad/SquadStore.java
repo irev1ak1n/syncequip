@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -73,13 +74,25 @@ public final class SquadStore {
                 profile.setLoadout(Loadout.load(section.getConfigurationSection("loadout"), Loadout.standard(),
                         "squads.yml " + name + ".loadout", warnings));
             }
-            ConfigurationSection pad = section.getConfigurationSection("pad");
-            if (pad != null && pad.isString("world") && pad.isInt("x") && pad.isInt("y") && pad.isInt("z")) {
-                profile.setPad(new Pad(parseUuid(pad.getString("world-id")), pad.getString("world"),
-                        pad.getInt("x"), pad.getInt("y"), pad.getInt("z")));
-                profile.setPadEnabled(pad.getBoolean("enabled", true));
-            } else if (pad != null) {
-                warnings.add("squads.yml: " + name + " has an incomplete pad and it was ignored");
+            ConfigurationSection block = section.getConfigurationSection("block");
+            if (block != null) {
+                Material material = block.isString("material") ? Material.matchMaterial(block.getString("material")) : null;
+                if (material != null && material.isBlock() && material.isSolid()) {
+                    profile.setBlock(material, block.getString("world"), parseUuid(block.getString("world-id")));
+                    profile.setBlockEnabled(block.getBoolean("enabled", true));
+                } else {
+                    warnings.add("squads.yml: " + name + " has a joining block material that is not a solid block and it was ignored");
+                }
+            }
+            // Joining blocks used to be single coordinates. Those are retired: they are never used, only reported once.
+            ConfigurationSection oldPad = section.getConfigurationSection("pad");
+            if (oldPad != null && oldPad.isString("world")) {
+                profile.setLegacyPad(oldPad.getString("world") + " " + oldPad.getInt("x") + " " + oldPad.getInt("y")
+                        + " " + oldPad.getInt("z"));
+                warnings.add("squads.yml: " + name + " had a coordinate joining block (" + profile.legacyPad()
+                        + "). That kind was replaced by block materials, so it was retired and will not add anyone.");
+            } else if (section.isString("legacy-pad")) {
+                profile.setLegacyPad(section.getString("legacy-pad"));
             }
             result.add(profile);
         }
@@ -103,16 +116,16 @@ public final class SquadStore {
             if (profile.loadout() != null) {
                 profile.loadout().save(yaml.createSection(base + ".loadout"));
             }
-            Pad pad = profile.pad();
-            if (pad != null) {
-                yaml.set(base + ".pad.world", pad.worldName());
-                if (pad.worldId() != null) {
-                    yaml.set(base + ".pad.world-id", pad.worldId().toString());
+            if (profile.blockMaterial() != null) {
+                yaml.set(base + ".block.material", profile.blockMaterial().name().toLowerCase(java.util.Locale.ROOT));
+                yaml.set(base + ".block.world", profile.blockWorldName());
+                if (profile.blockWorldId() != null) {
+                    yaml.set(base + ".block.world-id", profile.blockWorldId().toString());
                 }
-                yaml.set(base + ".pad.x", pad.x());
-                yaml.set(base + ".pad.y", pad.y());
-                yaml.set(base + ".pad.z", pad.z());
-                yaml.set(base + ".pad.enabled", profile.padEnabled());
+                yaml.set(base + ".block.enabled", profile.blockEnabled());
+            }
+            if (profile.legacyPad() != null) {
+                yaml.set(base + ".legacy-pad", profile.legacyPad());
             }
         }
         return yaml.saveToString();

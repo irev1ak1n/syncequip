@@ -33,7 +33,7 @@ public final class PlayerListener implements Listener {
         plugin.sequenceService().scheduler().removeParticipant(player.getUniqueId(), RemovalReason.DISCONNECTED);
         plugin.leaveSquad(player.getUniqueId(), RemovalReason.DISCONNECTED);
         plugin.cooldowns().clear(player.getUniqueId());
-        plugin.pads().forget(player.getUniqueId());
+        plugin.joinBlocks().forget(player.getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

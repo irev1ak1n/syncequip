@@ -381,7 +381,7 @@ class SquadFeaturesTest extends V11TestBase {
         PlayerMock leader = squad.get(0);
         assertTrue(command.complete(leader, new String[]{"squad", "sp"}).contains("speed"));
         assertTrue(command.complete(leader, new String[]{"squad", "speed", ""}).containsAll(List.of("1", "2", "4", "6", "10")));
-        assertEquals(List.of("set"), command.complete(leader, new String[]{"squad", "pad", "se"}));
+        assertEquals(List.of("set"), command.complete(leader, new String[]{"squad", "block", "se"}));
         assertTrue(command.complete(leader, new String[]{"squad", "loadout", "set", ""}).containsAll(
                 List.of("mainhand", "offhand", "helmet", "chestplate", "leggings", "boots")));
         assertTrue(command.complete(leader, new String[]{"squad", "loadout", "set", "mainhand", ""}).containsAll(

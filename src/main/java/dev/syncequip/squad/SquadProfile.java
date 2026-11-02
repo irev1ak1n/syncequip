@@ -3,11 +3,12 @@ package dev.syncequip.squad;
 import dev.syncequip.equipment.Loadout;
 import java.util.Locale;
 import java.util.UUID;
+import org.bukkit.Material;
 
 /**
- * The settings a squad keeps: its name, who owns it, its own speed and loadout, and its joining block. Unlike
- * the list of members, this survives the squad being empty and a server restart. A {@code null} speed or loadout
- * means "use the global default from config.yml".
+ * The settings a squad keeps: its name, who owns it, its own speed and loadout, and its joining block. Unlike the
+ * list of members, this survives the squad being empty and a server restart. A {@code null} speed or loadout means
+ * "use the global default from config.yml".
  */
 public final class SquadProfile {
 
@@ -15,8 +16,11 @@ public final class SquadProfile {
     private UUID owner;
     private Integer speed;
     private Loadout loadout;
-    private Pad pad;
-    private boolean padEnabled = true;
+    private Material blockMaterial;
+    private String blockWorldName;
+    private UUID blockWorldId;
+    private boolean blockEnabled = true;
+    private String legacyPad;
 
     public SquadProfile(String name, UUID owner) {
         this.name = name;
@@ -48,17 +52,34 @@ public final class SquadProfile {
         return loadout;
     }
 
-    public Pad pad() {
-        return pad;
+    /** The block material whose blocks add players to this squad, or {@code null} for none. */
+    public Material blockMaterial() {
+        return blockMaterial;
     }
 
-    public boolean padEnabled() {
-        return padEnabled;
+    public String blockWorldName() {
+        return blockWorldName;
+    }
+
+    public UUID blockWorldId() {
+        return blockWorldId;
+    }
+
+    public boolean blockEnabled() {
+        return blockEnabled;
+    }
+
+    /**
+     * A description of an old coordinate based joining block found in a saved file. It is never used to add anyone to
+     * a squad. It is only kept so the leader can be told once that it was retired.
+     */
+    public String legacyPad() {
+        return legacyPad;
     }
 
     /** Whether there is anything worth saving to disk. A plain squad with no overrides is not saved. */
     public boolean persistable() {
-        return speed != null || loadout != null || pad != null;
+        return speed != null || loadout != null || blockMaterial != null || legacyPad != null;
     }
 
     void setOwner(UUID owner) {
@@ -73,11 +94,24 @@ public final class SquadProfile {
         this.loadout = loadout;
     }
 
-    void setPad(Pad pad) {
-        this.pad = pad;
+    void setBlock(Material material, String worldName, UUID worldId) {
+        this.blockMaterial = material;
+        this.blockWorldName = worldName;
+        this.blockWorldId = worldId;
     }
 
-    void setPadEnabled(boolean padEnabled) {
-        this.padEnabled = padEnabled;
+    void clearBlock() {
+        this.blockMaterial = null;
+        this.blockWorldName = null;
+        this.blockWorldId = null;
+        this.blockEnabled = true;
+    }
+
+    void setBlockEnabled(boolean blockEnabled) {
+        this.blockEnabled = blockEnabled;
+    }
+
+    void setLegacyPad(String legacyPad) {
+        this.legacyPad = legacyPad;
     }
 }

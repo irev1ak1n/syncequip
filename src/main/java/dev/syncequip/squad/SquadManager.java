@@ -1,7 +1,9 @@
 package dev.syncequip.squad;
 
 import dev.syncequip.equipment.Loadout;
+import org.bukkit.Material;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,7 +38,7 @@ public final class SquadManager {
         NAME_INVALID,
         NAME_TAKEN,
         NAME_RESERVED,
-        PAD_CONFLICT
+        BLOCK_CONFLICT
     }
 
     public record LeaveResult(Status status, Squad squad, UUID newLeader, boolean disbanded) {
@@ -50,8 +52,10 @@ public final class SquadManager {
     private final Map<UUID, Squad> byId = new HashMap<>();
     private final Map<String, Squad> byName = new HashMap<>();
     private final Map<String, SquadProfile> profiles = new LinkedHashMap<>();
-    /** World id to packed block coordinates to profile. Only worlds that actually have pads appear here. */
-    private final Map<UUID, Map<Long, SquadProfile>> padIndex = new HashMap<>();
+    /** World id to block material to squad. Only worlds that have a joining block appear here. */
+    private final Map<UUID, Map<Material, SquadProfile>> blockIndex = new HashMap<>();
+    /** Material to squad for the all-worlds setting. A world specific assignment always wins over this. */
+    private final Map<Material, SquadProfile> anyWorld = new EnumMap<>(Material.class);
     private final Map<String, UUID> indexedWorld = new HashMap<>();
     private Runnable changeListener = () -> { };
 
@@ -150,7 +154,7 @@ public final class SquadManager {
     }
 
     /** Joins without an invite, for players stepping on a joining block. Never moves a player out of another squad. */
-    public Status joinViaPad(UUID player, Squad squad, int maxSize) {
+    public Status joinViaBlock(UUID player, Squad squad, int maxSize) {
         if (byPlayer.containsKey(player)) {
             return Status.ALREADY_IN_SQUAD;
         }
@@ -271,7 +275,7 @@ public final class SquadManager {
     /** Replaces the saved settings with what was read from disk. Call before any squad exists. */
     public void loadProfiles(Collection<SquadProfile> loaded) {
         profiles.clear();
-        padIndex.clear();
+        blockIndex.clear();
         indexedWorld.clear();
         for (SquadProfile profile : loaded) {
             profiles.put(profile.key(), profile);
@@ -291,29 +295,27 @@ public final class SquadManager {
     // ------------------------------------------------------------------ joining blocks
 
     /**
-     * Registers the joining block of a squad, replacing its old one. Fails if another squad already uses the block.
-     *
-     * @param worldId the id the world currently has, used for fast lookups
+     * Gives a squad its joining block material in a world, replacing the one it had. Fails if another squad already
+     * uses that material in the same world.
      */
-    public Status setPad(SquadProfile profile, Pad pad, UUID worldId) {
-        SquadProfile owner = padAt(worldId, pad.x(), pad.y(), pad.z()).orElse(null);
-        if (owner != null && owner != profile) {
-            return Status.PAD_CONFLICT;
+    public Status setBlock(SquadProfile profile, Material material, String worldName, UUID worldId) {
+        SquadProfile holder = blockIndex.getOrDefault(worldId, Map.of()).get(material);
+        if (holder != null && holder != profile) {
+            return Status.BLOCK_CONFLICT;
         }
         unindex(profile);
-        profile.setPad(pad);
+        profile.setBlock(material, worldName, worldId);
         index(profile, worldId);
         changed();
         return Status.OK;
     }
 
-    public boolean removePad(SquadProfile profile) {
-        if (profile.pad() == null) {
+    public boolean removeBlock(SquadProfile profile) {
+        if (profile.blockMaterial() == null) {
             return false;
         }
         unindex(profile);
-        profile.setPad(null);
-        profile.setPadEnabled(true);
+        profile.clearBlock();
         if (!profile.persistable() && !byName.containsKey(profile.key())) {
             profiles.remove(profile.key());
         }
@@ -321,54 +323,77 @@ public final class SquadManager {
         return true;
     }
 
-    public void setPadEnabled(SquadProfile profile, boolean enabled) {
-        profile.setPadEnabled(enabled);
+    public void setBlockEnabled(SquadProfile profile, boolean enabled) {
+        profile.setBlockEnabled(enabled);
         changed();
     }
 
-    public Optional<SquadProfile> padAt(UUID worldId, int x, int y, int z) {
-        Map<Long, SquadProfile> world = padIndex.get(worldId);
-        return world == null ? Optional.empty() : Optional.ofNullable(world.get(Pad.key(x, y, z)));
+    /** Forgets the note about an old coordinate based joining block once the leader has been told. */
+    public void clearLegacyPad(SquadProfile profile) {
+        profile.setLegacyPad(null);
+        changed();
     }
 
-    /** Cheap test used before looking up a block while a player walks. */
-    public boolean hasPads(UUID worldId) {
-        return padIndex.containsKey(worldId);
+    /** The squad whose joining block this is, looking at this world first and then, if allowed, every world. */
+    public Optional<SquadProfile> blockFor(UUID worldId, Material material, boolean allWorlds) {
+        Map<Material, SquadProfile> world = blockIndex.get(worldId);
+        SquadProfile hit = world == null ? null : world.get(material);
+        if (hit == null && allWorlds) {
+            hit = anyWorld.get(material);
+        }
+        return Optional.ofNullable(hit);
+    }
+
+    /** Cheap test used before reading a block while a player walks. */
+    public boolean hasBlocks(UUID worldId, boolean allWorlds) {
+        return blockIndex.containsKey(worldId) || (allWorlds && !anyWorld.isEmpty());
     }
 
     /**
-     * Rebuilds the lookup from the saved pads. The resolver turns a saved pad into the id of the world that is
-     * loaded now, or {@code null} if that world is not loaded.
+     * Rebuilds the lookup from the saved assignments. The resolver gives the id of the world a squad's block belongs
+     * to, or {@code null} if that world is not loaded.
      */
-    public void reindexPads(Function<Pad, UUID> resolver) {
-        padIndex.clear();
+    public void reindexBlocks(Function<SquadProfile, UUID> resolver) {
+        blockIndex.clear();
         indexedWorld.clear();
         for (SquadProfile profile : profiles.values()) {
-            if (profile.pad() != null) {
-                UUID worldId = resolver.apply(profile.pad());
+            if (profile.blockMaterial() != null) {
+                UUID worldId = resolver.apply(profile);
                 if (worldId != null) {
-                    index(profile, worldId);
+                    blockIndex.computeIfAbsent(worldId, id -> new EnumMap<>(Material.class))
+                            .put(profile.blockMaterial(), profile);
+                    indexedWorld.put(profile.key(), worldId);
                 }
             }
         }
+        rebuildAnyWorld();
     }
 
     private void index(SquadProfile profile, UUID worldId) {
-        Pad pad = profile.pad();
-        padIndex.computeIfAbsent(worldId, id -> new HashMap<>()).put(pad.key(), profile);
+        blockIndex.computeIfAbsent(worldId, id -> new EnumMap<>(Material.class)).put(profile.blockMaterial(), profile);
         indexedWorld.put(profile.key(), worldId);
+        rebuildAnyWorld();
     }
 
     private void unindex(SquadProfile profile) {
         UUID worldId = indexedWorld.remove(profile.key());
-        if (worldId == null || profile.pad() == null) {
-            return;
+        if (worldId != null && profile.blockMaterial() != null) {
+            Map<Material, SquadProfile> world = blockIndex.get(worldId);
+            if (world != null) {
+                world.remove(profile.blockMaterial(), profile);
+                if (world.isEmpty()) {
+                    blockIndex.remove(worldId);
+                }
+            }
         }
-        Map<Long, SquadProfile> world = padIndex.get(worldId);
-        if (world != null) {
-            world.remove(profile.pad().key(), profile);
-            if (world.isEmpty()) {
-                padIndex.remove(worldId);
+        rebuildAnyWorld();
+    }
+
+    private void rebuildAnyWorld() {
+        anyWorld.clear();
+        for (SquadProfile profile : profiles.values()) {
+            if (profile.blockMaterial() != null && indexedWorld.containsKey(profile.key())) {
+                anyWorld.putIfAbsent(profile.blockMaterial(), profile);
             }
         }
     }

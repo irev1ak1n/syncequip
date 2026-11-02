@@ -20,11 +20,12 @@ the top inventory row, and nothing worn. Keep slot 1 selected.
 
 ## v1.1 squad features (two or more players)
 
-- [ ] Leader: `/se squad create NULL`, stand on a block, `/se squad pad set`. You get "Joining block for NULL set"
-- [ ] A friend walks onto that block and sees "You joined squad NULL" (once, no spam)
-- [ ] Walking over a different stone block does nothing, and so does the block next to it
-- [ ] `/se squad pad info` shows the coordinates. `pad disable` stops joining, `pad enable` restores it
-- [ ] Break the block: the leader is told and the pad is gone
+- [ ] Leader: `/se squad create NULL`, then `/se squad block set obsidian` (or stand on obsidian and run `/se squad block set`)
+- [ ] A friend walks onto an obsidian block and sees "You joined squad NULL" (once, no spam)
+- [ ] A second friend walks onto a **different** obsidian block somewhere else and joins the same squad
+- [ ] Place a new obsidian block and step on it: it works too. Stone or gold does nothing
+- [ ] `/se squad block info` shows obsidian and the world. `block disable` stops joining, `block enable` restores it
+- [ ] A second squad cannot use obsidian in the same world (refused), but can use another material
 - [ ] `/function syncequip_test:kit_all`, then `/se squad speed 4` and `/se squad start`. Pieces are visibly slower and in step
 - [ ] `/se squad unequip`: sword, shield, helmet, chestplate, leggings, boots leave one by one, together, and land in the inventory
 - [ ] Fill one friend's inventory first. They are left out with a message and keep their gear on

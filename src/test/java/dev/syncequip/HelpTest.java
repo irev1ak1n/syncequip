@@ -63,7 +63,7 @@ class HelpTest extends PluginTestBase {
             run(player, "help", word);
             assertTrue(messages(player).getFirst().contains("Squads"), word);
         }
-        run(player, "help", "pad");
+        run(player, "help", "block");
         assertTrue(messages(player).getFirst().contains("Joining blocks"));
         run(player, "help", "loadouts");
         assertTrue(messages(player).getFirst().contains("Loadouts"));
@@ -124,7 +124,7 @@ class HelpTest extends PluginTestBase {
         String text = allHelp(op, 7);
         List<String> subs = command.complete(op, new String[]{"squad", ""});
         assertTrue(subs.containsAll(List.of("create", "invite", "join", "leave", "list", "info", "start", "cancel",
-                "unequip", "transfer", "speed", "pad", "loadout", "disband")), subs.toString());
+                "unequip", "transfer", "speed", "block", "loadout", "disband")), subs.toString());
         for (String sub : subs) {
             assertTrue(text.contains("/syncequip squad " + sub), "help is missing: /syncequip squad " + sub);
         }
@@ -133,8 +133,8 @@ class HelpTest extends PluginTestBase {
     @Test
     void everyPadLoadoutAndDemoActionIsDocumented() {
         String text = allHelp(op, 7);
-        for (String action : command.complete(op, new String[]{"squad", "pad", ""})) {
-            assertTrue(text.contains("/syncequip squad pad " + action), "help is missing: pad " + action);
+        for (String action : command.complete(op, new String[]{"squad", "block", ""})) {
+            assertTrue(text.contains("/syncequip squad block " + action), "help is missing: pad " + action);
         }
         for (String action : command.complete(op, new String[]{"squad", "loadout", ""})) {
             assertTrue(text.contains("/syncequip squad loadout " + action), "help is missing: loadout " + action);
@@ -171,9 +171,9 @@ class HelpTest extends PluginTestBase {
         List<String[]> commands = List.of(
                 new String[]{"squad", "info"}, new String[]{"squad", "list"},
                 new String[]{"squad", "speed", "4"}, new String[]{"squad", "speed", "default"},
-                new String[]{"squad", "pad", "set"}, new String[]{"squad", "pad", "info"},
-                new String[]{"squad", "pad", "disable"}, new String[]{"squad", "pad", "enable"},
-                new String[]{"squad", "pad", "remove"},
+                new String[]{"squad", "block", "set"}, new String[]{"squad", "block", "info"},
+                new String[]{"squad", "block", "disable"}, new String[]{"squad", "block", "enable"},
+                new String[]{"squad", "block", "remove"},
                 new String[]{"squad", "loadout", "show"}, new String[]{"squad", "loadout", "set", "mainhand", "netherite_sword"},
                 new String[]{"squad", "loadout", "optional", "mainhand", "on"},
                 new String[]{"squad", "loadout", "order", "offhand", "helmet"}, new String[]{"squad", "loadout", "reset"});

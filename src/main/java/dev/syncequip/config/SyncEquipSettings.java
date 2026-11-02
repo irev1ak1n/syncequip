@@ -22,7 +22,7 @@ public record SyncEquipSettings(
         Loadout defaultLoadout,
         boolean soloUseDefaultLoadout,
         int unequipCountdownSeconds,
-        Pads pads,
+        Blocks blocks,
         boolean debugLogTicks) {
 
     public SyncEquipSettings {
@@ -55,7 +55,8 @@ public record SyncEquipSettings(
             float unequipPitchMultiplier) {
     }
 
-    public record Pads(boolean enabled, int noticeCooldownSeconds) {
+    /** Joining blocks. {@code allWorlds}: a material applies in every world instead of only the world it was set in. */
+    public record Blocks(boolean enabled, int noticeCooldownSeconds, boolean allWorlds) {
     }
 
     public enum CountdownDisplay {

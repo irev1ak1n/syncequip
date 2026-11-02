@@ -12,9 +12,9 @@ import dev.syncequip.demo.DemoManager;
 import dev.syncequip.equipment.EquipmentManager;
 import dev.syncequip.equipment.SequenceService;
 import dev.syncequip.listeners.HotkeyListener;
-import dev.syncequip.listeners.PadListener;
+import dev.syncequip.listeners.JoinBlockListener;
 import dev.syncequip.listeners.PlayerListener;
-import dev.syncequip.squad.PadService;
+import dev.syncequip.squad.JoinBlockService;
 import dev.syncequip.squad.Squad;
 import dev.syncequip.squad.SquadManager;
 import dev.syncequip.squad.SquadSequenceController;
@@ -40,7 +40,7 @@ public class SyncEquipPlugin extends JavaPlugin {
     private SquadManager squads;
     private SquadSequenceController squadController;
     private DemoManager demo;
-    private PadService pads;
+    private JoinBlockService joinBlocks;
     private SquadStore squadStore;
     private SquadConfigCommands squadConfig;
     private boolean saveScheduled;
@@ -65,8 +65,8 @@ public class SyncEquipPlugin extends JavaPlugin {
         List<String> squadWarnings = new java.util.ArrayList<>();
         squads.loadProfiles(squadStore.load(squadWarnings));
         squadWarnings.forEach(w -> getLogger().warning(w));
-        pads = new PadService(getServer(), squads, messages, this::settings, System::currentTimeMillis);
-        pads.reindex();
+        joinBlocks = new JoinBlockService(getServer(), squads, messages, this::settings, System::currentTimeMillis);
+        joinBlocks.reindex();
         squads.setChangeListener(this::markSquadsDirty);
         squadConfig = new SquadConfigCommands(this);
 
@@ -74,7 +74,7 @@ public class SyncEquipPlugin extends JavaPlugin {
         demo.removeTaggedMobs();
 
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
-        getServer().getPluginManager().registerEvents(new PadListener(pads, squads), this);
+        getServer().getPluginManager().registerEvents(new JoinBlockListener(joinBlocks, squads), this);
         getServer().getPluginManager().registerEvents(new DemoListener(demo), this);
         getServer().getPluginManager().registerEvents(new HotkeyListener(this), this);
         registerCommand("syncequip", "Synchronized armor equipping", List.of("se", "sequip"),
@@ -180,8 +180,8 @@ public class SyncEquipPlugin extends JavaPlugin {
         return squadController;
     }
 
-    public PadService pads() {
-        return pads;
+    public JoinBlockService joinBlocks() {
+        return joinBlocks;
     }
 
     public SquadConfigCommands squadConfig() {

@@ -1,12 +1,20 @@
 # Changelog
 
+## 1.1.1 joining blocks by material
+
+- **Joining blocks are now a block material, not a coordinate.** `/se squad block set obsidian` (or `set` alone to use the
+  block under your feet) makes every block of that material, anywhere in the squad's world, add the players who step on it.
+  Commands: `block set|remove|info|enable|disable`, with an optional squad name for admins. `pad` was replaced.
+- One material per squad per world. `blocks.all-worlds: true` makes a material work in every world.
+- Old coordinate pads found in `squads.yml` are retired. They never trigger, the log says so, and the leader is told once.
+- Config: `pads:` became `blocks:` (the old keys are still read if `blocks:` is missing).
+
 ## 1.1 (the jar file is still called SyncEquip-1.0.0.jar, so it replaces the old one in place)
 
 New
 
 - **Named squads.** `/se squad create [name]`, `squad join <squad or leader>`, `squad info`, `squad disband`.
-- **Joining blocks.** `/se squad pad set|remove|info|enable|disable`. Stepping on one exact registered block joins
-  the squad. Admins can manage the pads of other squads.
+- **Joining blocks.** First released as one registered block, replaced in 1.1.1 by block materials (see above).
 - **Group unequip.** `/se squad unequip` (and `/se unequip` for yourself) takes gear off in reverse order on shared
   ticks, with a room check first, nothing dropped, and members who lack space left out with a reason.
 - **Per-squad speed.** `/se squad speed <1-10|default>`, used for both equipping and unequipping.

@@ -5,7 +5,7 @@ import dev.syncequip.config.SyncEquipSettings.CountdownDisplay;
 import dev.syncequip.config.SyncEquipSettings.Demo;
 import dev.syncequip.config.SyncEquipSettings.DemoFacing;
 import dev.syncequip.config.SyncEquipSettings.HotkeyAction;
-import dev.syncequip.config.SyncEquipSettings.Pads;
+import dev.syncequip.config.SyncEquipSettings.Blocks;
 import dev.syncequip.config.SyncEquipSettings.Sounds;
 import dev.syncequip.config.SyncEquipSettings.Visuals;
 import dev.syncequip.equipment.EquipmentStep;
@@ -119,13 +119,15 @@ public final class ConfigManager {
 
         Loadout defaultLoadout = Loadout.load(config.getConfigurationSection("loadout.default"),
                 Loadout.standard().withOrder(order), "loadout.default", warnings);
-        Pads pads = new Pads(config.getBoolean("pads.enabled", true),
-                intInRange(config, "pads.notice-cooldown-seconds", 5, 0, 600, warnings));
+        Blocks blocks = new Blocks(config.getBoolean("blocks.enabled", config.getBoolean("pads.enabled", true)),
+                intInRange(config, config.isSet("blocks.notice-cooldown-seconds") ? "blocks.notice-cooldown-seconds"
+                        : "pads.notice-cooldown-seconds", 5, 0, 600, warnings),
+                config.getBoolean("blocks.all-worlds", false));
 
         return new SyncEquipSettings(interval, order, requireEmpty, policy, lockInventory, soloCountdown,
                 squadCountdown, maxSquad, inviteExpiry, sounds, visuals, controls, demo, defaultLoadout,
                 config.getBoolean("loadout.solo-uses-default", false),
-                intInRange(config, "synchronization.unequip-countdown-seconds", 3, 0, 10, warnings), pads,
+                intInRange(config, "synchronization.unequip-countdown-seconds", 3, 0, 10, warnings), blocks,
                 config.getBoolean("debug.log-sequence-ticks", false));
     }
 

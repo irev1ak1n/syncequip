@@ -117,13 +117,16 @@ loadout:
   # true: solo sequences use the loadout above too (sword included).
   solo-uses-default: false
 
-pads:
-  # Joining blocks: a leader stands on a block and runs /syncequip squad pad set. Anyone who steps on
-  # that exact block joins the squad.
+blocks:
+  # Joining blocks: a leader runs /syncequip squad block set obsidian (or stands on a block and runs
+  # /syncequip squad block set). Anyone who steps onto a block of that material joins the squad.
   enabled: true
-  # A player who steps on a pad they cannot use (full squad, already in another squad) hears about it at most
+  # A player who steps onto a block they cannot use (full squad, already in another squad) hears about it at most
   # this often.
   notice-cooldown-seconds: 5
+  # false: the material only works in the world where the leader set it.
+  # true: it works in every world.
+  all-worlds: false
 
 debug:
   # Log the scheduled and actual server tick of every step for every player.

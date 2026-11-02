@@ -7,8 +7,7 @@ import dev.syncequip.config.SyncEquipSettings;
 import dev.syncequip.equipment.EquipmentStep;
 import dev.syncequip.equipment.Loadout;
 import dev.syncequip.equipment.SlotRequirement;
-import dev.syncequip.squad.Pad;
-import dev.syncequip.squad.PadService;
+import dev.syncequip.squad.JoinBlockService;
 import dev.syncequip.squad.Squad;
 import dev.syncequip.squad.SquadManager;
 import dev.syncequip.squad.SquadProfile;
@@ -33,7 +32,9 @@ import org.bukkit.entity.Player;
 public final class SquadConfigCommands {
 
     private static final List<String> SLOTS = List.of("mainhand", "offhand", "helmet", "chestplate", "leggings", "boots");
-    private static final List<String> PAD_ACTIONS = List.of("set", "remove", "info", "enable", "disable");
+    private static final List<String> BLOCK_ACTIONS = List.of("set", "remove", "info", "enable", "disable");
+    private static final List<String> COMMON_BLOCKS = List.of("here", "obsidian", "crying_obsidian", "gold_block",
+            "diamond_block", "emerald_block", "netherite_block", "bedrock", "stone", "quartz_block");
     private static final List<String> LOADOUT_ACTIONS = List.of("show", "reset", "set", "optional", "order");
 
     /** The squad a command is about: always has a profile, and a live squad if it is currently running. */
@@ -50,7 +51,8 @@ public final class SquadConfigCommands {
         switch (sub) {
             case "info" -> info(player, args.length > 2 ? args[2] : null);
             case "speed" -> speed(player, args);
-            case "pad" -> pad(player, args);
+            case "block" -> block(player, args);
+            case "pad" -> messages().send(player, "block.pad-retired");
             case "loadout" -> loadout(player, args);
             case "disband" -> disband(player, args.length > 2 ? args[2] : null);
             default -> plugin.messages().send(player, "command.squad-usage");
@@ -137,7 +139,7 @@ public final class SquadConfigCommands {
         Loadout loadout = profile.loadout() != null ? profile.loadout() : s.defaultLoadout();
         messages().sendPlain(player, "info.loadout", ph("steps", describeSteps(loadout)),
                 ph("source", profile.loadout() != null ? "squad setting" : "default"));
-        messages().sendPlain(player, "info.pad", ph("pad", padSummary(profile)));
+        messages().sendPlain(player, "info.block", ph("block", blockSummary(profile)));
     }
 
     private String describeSteps(Loadout loadout) {
@@ -148,14 +150,14 @@ public final class SquadConfigCommands {
         return parts.isEmpty() ? "nothing" : String.join(" > ", parts);
     }
 
-    private String padSummary(SquadProfile profile) {
-        Pad pad = profile.pad();
-        if (pad == null) {
+    private String blockSummary(SquadProfile profile) {
+        if (profile.blockMaterial() == null) {
             return "none";
         }
-        boolean worldLoaded = plugin.getServer().getWorld(pad.worldName()) != null;
-        return pad.worldName() + " " + pad.x() + " " + pad.y() + " " + pad.z()
-                + (profile.padEnabled() ? "" : " (disabled)") + (worldLoaded ? "" : " (world not loaded)");
+        boolean worldLoaded = profile.blockWorldName() != null && plugin.getServer().getWorld(profile.blockWorldName()) != null;
+        return JoinBlockService.pretty(profile.blockMaterial())
+                + (settings().blocks().allWorlds() ? " in every world" : " in " + profile.blockWorldName())
+                + (profile.blockEnabled() ? "" : " (disabled)") + (worldLoaded ? "" : " (world not loaded)");
     }
 
     // ------------------------------------------------------------------ speed
@@ -192,64 +194,73 @@ public final class SquadConfigCommands {
 
     // ------------------------------------------------------------------ pad
 
-    private void pad(Player player, String[] args) {
+    private void block(Player player, String[] args) {
         if (args.length < 3) {
-            messages().send(player, "pad.usage");
+            messages().send(player, "block.usage");
             return;
         }
         String action = args[2].toLowerCase(Locale.ROOT);
-        String nameArg = args.length > 3 ? args[3] : null;
-        PadService pads = plugin.pads();
+        JoinBlockService blocks = plugin.joinBlocks();
         switch (action) {
             case "set" -> {
-                Target target = resolve(player, nameArg, true);
+                String word = args.length > 3 ? args[3] : null;
+                Material material = null;
+                if (word != null && !word.equalsIgnoreCase("here")) {
+                    JoinBlockService.ParsedMaterial parsed = JoinBlockService.parseMaterial(word);
+                    if (!parsed.ok()) {
+                        messages().send(player, "block.invalid", ph("reason", parsed.error()));
+                        return;
+                    }
+                    material = parsed.material();
+                }
+                Target target = resolve(player, args.length > 4 ? args[4] : null, true);
                 if (target == null) {
                     return;
                 }
-                switch (pads.set(player, target.profile())) {
-                    case OK -> {
-                        Pad pad = target.profile().pad();
-                        messages().send(player, "pad.set", ph("squad", target.profile().name()),
-                                ph("where", pad.worldName() + " " + pad.x() + " " + pad.y() + " " + pad.z()));
-                    }
-                    case NOT_SOLID -> messages().send(player, "pad.not-solid");
-                    case CONFLICT -> messages().send(player, "pad.conflict");
+                switch (blocks.set(player, target.profile(), material)) {
+                    case OK -> messages().send(player, "block.set", ph("squad", target.profile().name()),
+                            ph("material", JoinBlockService.pretty(target.profile().blockMaterial())),
+                            ph("world", target.profile().blockWorldName()));
+                    case NOT_SOLID -> messages().send(player, "block.not-solid");
+                    case CONFLICT -> messages().send(player, "block.conflict",
+                            ph("material", JoinBlockService.pretty(material != null ? material
+                                    : JoinBlockService.blockUnder(player.getLocation()).getType())),
+                            ph("world", player.getWorld().getName()));
                 }
             }
             case "remove" -> {
-                Target target = resolve(player, nameArg, true);
-                if (target == null) {
-                    return;
+                Target target = resolve(player, args.length > 3 ? args[3] : null, true);
+                if (target != null) {
+                    messages().send(player, squads().removeBlock(target.profile()) ? "block.removed" : "block.none",
+                            ph("squad", target.profile().name()));
                 }
-                messages().send(player, squads().removePad(target.profile()) ? "pad.removed" : "pad.none",
-                        ph("squad", target.profile().name()));
             }
             case "enable", "disable" -> {
-                Target target = resolve(player, nameArg, true);
+                Target target = resolve(player, args.length > 3 ? args[3] : null, true);
                 if (target == null) {
                     return;
                 }
-                if (target.profile().pad() == null) {
-                    messages().send(player, "pad.none", ph("squad", target.profile().name()));
+                if (target.profile().blockMaterial() == null) {
+                    messages().send(player, "block.none", ph("squad", target.profile().name()));
                     return;
                 }
                 boolean on = action.equals("enable");
-                squads().setPadEnabled(target.profile(), on);
-                messages().send(player, on ? "pad.enabled" : "pad.disabled", ph("squad", target.profile().name()));
+                squads().setBlockEnabled(target.profile(), on);
+                messages().send(player, on ? "block.enabled" : "block.disabled", ph("squad", target.profile().name()));
             }
             case "info" -> {
-                Target target = resolve(player, nameArg, false);
+                Target target = resolve(player, args.length > 3 ? args[3] : null, false);
                 if (target == null) {
                     return;
                 }
-                if (target.profile().pad() == null) {
-                    messages().send(player, "pad.none", ph("squad", target.profile().name()));
+                if (target.profile().blockMaterial() == null) {
+                    messages().send(player, "block.none", ph("squad", target.profile().name()));
                     return;
                 }
-                messages().send(player, "pad.info", ph("squad", target.profile().name()),
-                        ph("where", padSummary(target.profile())));
+                messages().send(player, "block.info", ph("squad", target.profile().name()),
+                        ph("where", blockSummary(target.profile())));
             }
-            default -> messages().send(player, "pad.usage");
+            default -> messages().send(player, "block.usage");
         }
     }
 
@@ -382,14 +393,20 @@ public final class SquadConfigCommands {
         if (args.length == 3) {
             return switch (sub) {
                 case "speed" -> filter(Stream.of("1", "2", "4", "6", "10", "default"), args[2]);
-                case "pad" -> filter(PAD_ACTIONS.stream(), args[2]);
+                case "block" -> filter(BLOCK_ACTIONS.stream(), args[2]);
                 case "loadout" -> filter(LOADOUT_ACTIONS.stream(), args[2]);
                 case "info", "disband" -> admin ? filter(squadNames(), args[2]) : List.of();
                 default -> List.of();
             };
         }
-        if (sub.equals("pad") && args.length == 4 && admin) {
-            return filter(squadNames(), args[3]);
+        if (sub.equals("block")) {
+            if (args[2].equalsIgnoreCase("set")) {
+                if (args.length == 4) {
+                    return filter(blockMaterials(args[3]), args[3]);
+                }
+                return args.length == 5 && admin ? filter(squadNames(), args[4]) : List.of();
+            }
+            return args.length == 4 && admin ? filter(squadNames(), args[3]) : List.of();
         }
         if (sub.equals("loadout")) {
             String action = args[2].toLowerCase(Locale.ROOT);
@@ -411,6 +428,20 @@ public final class SquadConfigCommands {
             }
         }
         return List.of();
+    }
+
+    private Stream<String> blockMaterials(String typed) {
+        List<String> names = new ArrayList<>(COMMON_BLOCKS);
+        if (typed.length() >= 2) {
+            String lower = typed.toLowerCase(Locale.ROOT);
+            Stream.of(Material.values())
+                    .filter(m -> !m.isLegacy() && m.isBlock() && m.isSolid())
+                    .map(m -> m.name().toLowerCase(Locale.ROOT))
+                    .filter(name -> name.startsWith(lower))
+                    .limit(40)
+                    .forEach(names::add);
+        }
+        return names.stream().distinct();
     }
 
     private Stream<String> squadNames() {

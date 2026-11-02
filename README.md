@@ -145,7 +145,7 @@ Base command: `/syncequip` (aliases `/se`, `/sequip`). Every subcommand has tab 
 | `/syncequip squad info` | Show members, speed, loadout and joining block |
 | `/syncequip squad unequip` | Everyone takes their gear off together, in reverse order (leader) |
 | `/syncequip squad speed [ticks\|default]` | Ticks between pieces for this squad, 1 to 10 (leader) |
-| `/syncequip squad pad set\|remove\|info\|enable\|disable` | The joining block, see [Squads in detail](#squads-in-detail-v11) |
+| `/syncequip squad block set\|remove\|info\|enable\|disable` | The joining block material, see [Squads in detail](#squads-in-detail-v11) |
 | `/syncequip squad loadout show\|reset\|set\|optional\|order` | Which items each slot needs (leader) |
 | `/syncequip squad disband` | End the squad and delete its saved settings (leader) |
 | `/syncequip unequip` | Take your own gear off in reverse order |
@@ -153,7 +153,7 @@ Base command: `/syncequip` (aliases `/se`, `/sequip`). Every subcommand has tab 
 | `/syncequip settings` | Show the settings currently in effect |
 | `/syncequip reload` | Reload `config.yml` and `messages.yml` |
 | `/syncequip demo ...` | Demo mode with husks, see [Demo mode](#demo-mode) |
-| `/syncequip help [page or name]` | Paged help: basics, squads, sequences, pads, loadout (and demo, admin where allowed) |
+| `/syncequip help [page or name]` | Paged help: basics, squads, sequences, blocks, loadout (and demo, admin where allowed) |
 
 ## Squads in detail (v1.1)
 
@@ -165,32 +165,39 @@ squad name or the leader's name.
 
 ### Joining blocks
 
-A leader (or admin) can turn one exact block into a way to join, so dozens of players can join just by walking:
+A leader (or admin) gives the squad a **block material**. Anyone who steps onto a block of that material joins the
+squad, wherever the block is and whenever it was placed. Nobody needs an invitation.
 
 ```
 /se squad create NULL
-(stand on the block you want)
-/se squad pad set
+/se squad block set obsidian
 ```
 
-From then on, anyone who steps onto **that block at those coordinates** joins `NULL` and sees `You joined squad NULL`.
-Other blocks of the same material do nothing.
+Now 50 players standing on 50 different obsidian blocks at 50 different coordinates all join `NULL`, each seeing
+`You joined squad NULL`. Other materials do nothing.
 
 | Command | What it does |
 |---|---|
-| `/se squad pad set [squad]` | Register the solid block under your feet (replaces the old one) |
-| `/se squad pad remove [squad]` | Remove the joining block |
-| `/se squad pad info [squad]` | Show its world, coordinates and whether it is on (members may look) |
-| `/se squad pad enable [squad]` / `disable [squad]` | Turn joining by stepping on or off |
+| `/se squad block set <block>` | Use this block material, for example `obsidian` or `minecraft:gold_block` (any solid block) |
+| `/se squad block set` (or `set here`) | Use the material of the block under your feet |
+| `/se squad block remove` | Remove the joining block |
+| `/se squad block info` | Show the material and world (members may look) |
+| `/se squad block enable` / `disable` | Turn joining by stepping on it on or off |
 
-The optional `[squad]` is for administrators (`syncequip.admin`), who can manage any squad, running or saved.
+Admins (`syncequip.admin`) can add a squad name at the end of any block command to manage another squad, for example
+`/se squad block set obsidian NULL`.
 
-- Nobody is ever moved out of a squad. A player already in another squad is told once how to leave, then left alone.
-  Full squads turn people away with one message, and the same player is not told again for a few seconds.
-- Only block changes are looked at, so head turns and small movements cost nothing. Worlds without a pad skip the
-  lookup entirely.
-- If the block is broken, blown up or moved by a piston, the registration is removed and the leader is told.
-- Pads and the rest of a squad's settings are saved (see below) and come back after a restart.
+- The material applies in the world where it was set. With `blocks.all-worlds: true` in `config.yml` it applies in every
+  world (a squad with its own assignment in the player's world still wins).
+- Two squads cannot use the same material in the same world. Set one first and the second is refused.
+- Nobody is moved out of a squad. A player already in another squad is told once how to leave, then left alone. Full
+  squads turn people away with one message, and nobody hears about a block again for a few seconds.
+- It reads the block under the player's feet only when they enter a new block (or land on one), and only in worlds that
+  have a joining block, so 100+ players cost almost nothing.
+- Pick a material people will only find where you want them to. `stone` or `grass_block` would add everyone who walks
+  over the world.
+- **Old coordinate pads are retired.** Version 1.1 first used a single registered block. A saved one is never used. The
+  server logs a warning, and the leader is told once when they bring the squad back. Use `/se squad block set` instead.
 
 ### Speed
 

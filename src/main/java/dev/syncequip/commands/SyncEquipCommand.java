@@ -38,8 +38,8 @@ public final class SyncEquipCommand implements BasicCommand {
     private static final List<String> ROOT = List.of("solo", "unequip", "squad", "demo", "settings", "reload", "help");
     private static final List<String> DEMO = List.of("spawn", "start", "repeat", "stop", "reset", "clear", "speed");
     private static final List<String> SQUAD = List.of("create", "invite", "join", "leave", "list", "info", "start",
-            "cancel", "unequip", "transfer", "speed", "pad", "loadout", "disband");
-    private static final List<String> SQUAD_CONFIG = List.of("info", "speed", "pad", "loadout", "disband");
+            "cancel", "unequip", "transfer", "speed", "block", "loadout", "disband");
+    private static final List<String> SQUAD_CONFIG = List.of("info", "speed", "block", "pad", "loadout", "disband");
 
     private final SyncEquipPlugin plugin;
 
@@ -232,7 +232,7 @@ public final class SyncEquipCommand implements BasicCommand {
             case "list" -> squadList(player);
             case "start" -> plugin.squadController().start(player);
             case "unequip" -> plugin.squadController().unequip(player);
-            case "info", "speed", "pad", "loadout", "disband" ->
+            case "info", "speed", "block", "pad", "loadout", "disband" ->
                     plugin.squadConfig().handle(player, args[1].toLowerCase(Locale.ROOT), args);
             case "cancel" -> plugin.squadController().cancel(player);
             case "transfer" -> withTarget(player, args, "transfer", target -> squadTransfer(player, target));
@@ -264,6 +264,10 @@ public final class SyncEquipCommand implements BasicCommand {
                 messages.send(player, "squad.created", ph("squad", profile.name()));
                 if (profile.persistable()) {
                     messages.send(player, "squad.restored", ph("squad", profile.name()));
+                }
+                if (profile.legacyPad() != null) {
+                    messages.send(player, "squad.legacy-pad", ph("where", profile.legacyPad()));
+                    plugin.squads().clearLegacyPad(profile);
                 }
             }
             case ALREADY_IN_SQUAD -> messages.send(player, "squad.already-in-squad");
@@ -381,7 +385,7 @@ public final class SyncEquipCommand implements BasicCommand {
     }
 
 
-    private static final List<String> HELP_PAGES = List.of("basics", "squads", "sequences", "pads", "loadout", "demo",
+    private static final List<String> HELP_PAGES = List.of("basics", "squads", "sequences", "blocks", "loadout", "demo",
             "admin");
 
     /** The help pages this sender may use, in order. Pages about commands they cannot run are left out. */
@@ -389,7 +393,7 @@ public final class SyncEquipCommand implements BasicCommand {
         List<String> pages = new ArrayList<>();
         for (String id : HELP_PAGES) {
             boolean visible = switch (id) {
-                case "squads", "sequences", "pads", "loadout" -> sender.hasPermission(PERMISSION_SQUAD);
+                case "squads", "sequences", "blocks", "loadout" -> sender.hasPermission(PERMISSION_SQUAD);
                 case "demo" -> sender.hasPermission(PERMISSION_DEMO);
                 case "admin" -> sender.hasPermission(PERMISSION_RELOAD) || SquadSequenceController.isAdmin(sender);
                 default -> true;
@@ -404,7 +408,7 @@ public final class SyncEquipCommand implements BasicCommand {
     private static int helpPageIndex(List<String> pages, String input) {
         String word = switch (input.toLowerCase(Locale.ROOT)) {
             case "squad" -> "squads";
-            case "pad", "joining", "block", "blocks" -> "pads";
+            case "pad", "joining", "block" -> "blocks";
             case "loadouts" -> "loadout";
             case "equip", "unequip", "speed", "sequence" -> "sequences";
             case "reload" -> "admin";
