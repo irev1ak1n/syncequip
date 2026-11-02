@@ -1,7 +1,6 @@
 package dev.syncequip.equipment;
 
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
@@ -14,6 +13,8 @@ public final class EquipmentManager {
         ALREADY,
         MISSING,
         OCCUPIED,
+        /** A fitting item exists but another slot of the loadout is using it. */
+        CONFLICT,
         INVALID_PLAYER
     }
 
@@ -44,69 +45,25 @@ public final class EquipmentManager {
 
     public Result equip(Player player, EquipmentStep step, SlotRequirement requirement, boolean requireEmptySlot,
                         boolean silent, boolean acceptExisting) {
+        return equip(player, step, requirement, null, requireEmptySlot, silent, acceptExisting);
+    }
+
+    /** @param loadout the whole loadout, so an item another slot is using is not taken; may be {@code null} */
+    public Result equip(Player player, EquipmentStep step, SlotRequirement requirement, Loadout loadout,
+                        boolean requireEmptySlot, boolean silent, boolean acceptExisting) {
         if (!InventoryValidator.canEquip(player)) {
             return new Result(Status.INVALID_PLAYER, null);
         }
-        PlayerInventory inventory = player.getInventory();
-        ItemStack current = InventoryValidator.current(inventory, step);
-        boolean occupied = current != null;
-        if (occupied && acceptExisting && requirement.matches(step, current.getType())) {
-            return new Result(Status.ALREADY, current);
-        }
-        if (occupied && requireEmptySlot) {
-            return new Result(Status.OCCUPIED, null);
-        }
-        int sourceSlot = InventoryValidator.findSourceSlot(inventory, step, requirement);
-        if (sourceSlot < 0) {
-            return new Result(Status.MISSING, null);
-        }
-        ItemStack source = inventory.getItem(sourceSlot);
-        if (step.isHand()) {
-            return moveHandItem(player, step, sourceSlot, source, current, silent);
-        }
-
-        ItemStack toEquip = source.asOne();
-        ItemStack sourceRemainder = source.getAmount() > 1 ? source.asQuantity(source.getAmount() - 1) : null;
-
-        // A worn piece is never dropped. If it has no safe slot to go back to, the move is refused instead.
-        ItemStack displaced = occupied ? current : null;
-        int displacedSlot = -1;
-        if (displaced != null) {
-            if (sourceRemainder == null) {
-                displacedSlot = sourceSlot;
-            } else {
-                displacedSlot = inventory.firstEmpty();
-                if (displacedSlot < 0) {
-                    return new Result(Status.OCCUPIED, null);
-                }
-            }
-        }
-
-        inventory.setItem(sourceSlot, sourceRemainder);
-        if (displaced != null && displacedSlot != sourceSlot) {
-            inventory.setItem(displacedSlot, displaced);
-        } else if (displaced != null) {
-            inventory.setItem(sourceSlot, displaced);
-        }
-        player.getEquipment().setItem(step.slot(), toEquip, silent);
-        return new Result(Status.EQUIPPED, toEquip);
-    }
-
-    /**
-     * Main hand and offhand take the whole stack and swap with whatever is there, so no item is lost. The
-     * main hand is the slot the player has selected, and the selection never changes.
-     */
-    private Result moveHandItem(Player player, EquipmentStep step, int sourceSlot, ItemStack source,
-                                ItemStack current, boolean silent) {
-        PlayerInventory inventory = player.getInventory();
-        ItemStack moving = source.clone();
-        inventory.setItem(sourceSlot, current == null ? null : current.clone());
-        if (step == EquipmentStep.MAIN_HAND) {
-            inventory.setItem(inventory.getHeldItemSlot(), moving);
-        } else {
-            player.getEquipment().setItem(EquipmentSlot.OFF_HAND, moving, silent);
-        }
-        return new Result(Status.EQUIPPED, moving);
+        EquipPlanner.Slots slots = EquipPlanner.live(player);
+        EquipPlanner.Decision decision = EquipPlanner.plan(slots, loadout, step, requirement, requireEmptySlot,
+                acceptExisting);
+        return switch (decision.status()) {
+            case ALREADY -> new Result(Status.ALREADY, slots.get(EquipPlanner.destination(step, slots.held())));
+            case OCCUPIED -> new Result(Status.OCCUPIED, null);
+            case MISSING -> new Result(Status.MISSING, null);
+            case CONFLICT -> new Result(Status.CONFLICT, null);
+            case MOVE -> new Result(Status.EQUIPPED, EquipPlanner.apply(slots, step, decision.move(), silent));
+        };
     }
 
     /**

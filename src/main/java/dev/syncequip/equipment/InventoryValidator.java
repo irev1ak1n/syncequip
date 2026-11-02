@@ -14,26 +14,6 @@ public final class InventoryValidator {
     private InventoryValidator() {
     }
 
-    public static int findSourceSlot(PlayerInventory inventory, EquipmentStep step) {
-        return findSourceSlot(inventory, step, SlotRequirement.ANY);
-    }
-
-    /** First storage slot holding an item this requirement accepts. The slot the player is holding is never used. */
-    public static int findSourceSlot(PlayerInventory inventory, EquipmentStep step, SlotRequirement requirement) {
-        int held = inventory.getHeldItemSlot();
-        for (int slot = 0; slot < STORAGE_SLOTS; slot++) {
-            // The held slot is skipped so the weapon in the player's main hand always stays where it is.
-            if (slot == held) {
-                continue;
-            }
-            ItemStack item = inventory.getItem(slot);
-            if (item != null && !item.isEmpty() && requirement.matches(step, item.getType())) {
-                return slot;
-            }
-        }
-        return -1;
-    }
-
     /** What is in the slot this step fills right now, or {@code null} if it is empty. */
     public static ItemStack current(PlayerInventory inventory, EquipmentStep step) {
         ItemStack item = step == EquipmentStep.MAIN_HAND
@@ -61,30 +41,35 @@ public final class InventoryValidator {
      * @param acceptExisting if true, an item already in the right slot that the loadout accepts counts as done
      */
     public static Report validate(Player player, Loadout loadout, boolean requireEmptySlots, boolean acceptExisting) {
-        PlayerInventory inventory = player.getInventory();
+        // Runs the same planner as the real sequence, step by step on a private copy, so the check and the
+        // execution cannot disagree about what is available.
+        EquipPlanner.Slots model = EquipPlanner.copyOf(player);
         List<EquipmentStep> available = new ArrayList<>();
         List<EquipmentStep> missing = new ArrayList<>();
         List<EquipmentStep> occupied = new ArrayList<>();
         List<EquipmentStep> satisfied = new ArrayList<>();
         List<EquipmentStep> skippable = new ArrayList<>();
+        List<EquipmentStep> conflicts = new ArrayList<>();
         for (EquipmentStep step : loadout.steps()) {
             SlotRequirement req = loadout.requirement(step);
-            ItemStack current = current(inventory, step);
-            if (current != null && acceptExisting && req.matches(step, current.getType())) {
-                satisfied.add(step);
-            } else if (current != null && requireEmptySlots) {
-                (req.optional() ? skippable : occupied).add(step);
-            } else if (findSourceSlot(inventory, step, req) < 0) {
-                (req.optional() ? skippable : missing).add(step);
-            } else {
-                available.add(step);
+            EquipPlanner.Decision decision = EquipPlanner.plan(model, loadout, step, req, requireEmptySlots,
+                    acceptExisting);
+            switch (decision.status()) {
+                case ALREADY -> satisfied.add(step);
+                case MOVE -> {
+                    available.add(step);
+                    EquipPlanner.apply(model, step, decision.move(), true);
+                }
+                case MISSING -> (req.optional() ? skippable : missing).add(step);
+                case OCCUPIED -> (req.optional() ? skippable : occupied).add(step);
+                case CONFLICT -> (req.optional() ? skippable : conflicts).add(step);
             }
         }
-        return new Report(available, missing, occupied, satisfied, skippable);
+        return new Report(available, missing, occupied, satisfied, skippable, conflicts);
     }
 
     public record Report(List<EquipmentStep> available, List<EquipmentStep> missing, List<EquipmentStep> occupied,
-                         List<EquipmentStep> satisfied, List<EquipmentStep> skippable) {
+                         List<EquipmentStep> satisfied, List<EquipmentStep> skippable, List<EquipmentStep> conflicts) {
 
         public Report {
             available = List.copyOf(available);
@@ -92,14 +77,15 @@ public final class InventoryValidator {
             occupied = List.copyOf(occupied);
             satisfied = List.copyOf(satisfied);
             skippable = List.copyOf(skippable);
+            conflicts = List.copyOf(conflicts);
         }
 
         public Report(List<EquipmentStep> available, List<EquipmentStep> missing, List<EquipmentStep> occupied) {
-            this(available, missing, occupied, List.of(), List.of());
+            this(available, missing, occupied, List.of(), List.of(), List.of());
         }
 
         public boolean allAvailable() {
-            return missing.isEmpty() && occupied.isEmpty();
+            return missing.isEmpty() && occupied.isEmpty() && conflicts.isEmpty();
         }
 
         public boolean noneAvailable() {

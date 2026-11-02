@@ -114,6 +114,9 @@ public final class SequenceService implements SequenceCallbacks {
         if (!report.missing().isEmpty()) {
             parts.add(messages.render("problem.missing", ph("pieces", loadout.describe(report.missing()))));
         }
+        if (!report.conflicts().isEmpty()) {
+            parts.add(messages.render("problem.conflict", ph("pieces", loadout.describe(report.conflicts()))));
+        }
         List<EquipmentStep> wornSlots = report.occupied().stream().filter(s -> !s.isHand()).toList();
         List<EquipmentStep> busyHands = report.occupied().stream().filter(EquipmentStep::isHand).toList();
         if (!wornSlots.isEmpty()) {
@@ -309,7 +312,7 @@ public final class SequenceService implements SequenceCallbacks {
         String result;
         if (ctx.action() == Action.EQUIP) {
             // Equipping is silent when custom sounds are on, so each step plays exactly one sound and never two.
-            EquipmentManager.Result moved = equipmentManager.equip(player, step, requirement,
+            EquipmentManager.Result moved = equipmentManager.equip(player, step, requirement, ctx.loadout(),
                     config.requireEmptySlots(), config.sounds().enabled(), ctx.acceptExisting());
             result = moved.status().name();
             outcome = switch (moved.status()) {
@@ -318,7 +321,7 @@ public final class SequenceService implements SequenceCallbacks {
                     sequence.removeParticipant(participant, RemovalReason.INVALID_STATE);
                     yield StepOutcome.SKIPPED;
                 }
-                case MISSING, OCCUPIED -> !requirement.optional() && config.missingItemPolicy() == MissingItemPolicy.ABORT
+                case MISSING, OCCUPIED, CONFLICT -> !requirement.optional() && config.missingItemPolicy() == MissingItemPolicy.ABORT
                         ? StepOutcome.ABORTED : StepOutcome.SKIPPED;
             };
             if (moved.equipped()) {

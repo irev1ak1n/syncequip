@@ -24,6 +24,7 @@ problem:
   missing: 'missing <pieces>'
   occupied: 'already wearing <pieces>'
   occupied-hand: 'hands already busy with <pieces>'
+  conflict: '<pieces> needed for another slot'
   nothing-to-remove: 'nothing to take off'
   no-room: 'not enough free inventory slots'
 

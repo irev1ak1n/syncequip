@@ -111,15 +111,18 @@ class EquipmentManagerTest extends PluginTestBase {
     }
 
     @Test
-    void neverTakesTheMainHandItem() {
+    void anItemHeldInTheHandIsAValidSourceAndAWeaponIsNeverTouched() {
         PlayerMock player = server.addPlayer();
         PlayerInventory inventory = player.getInventory();
         inventory.setHeldItemSlot(3);
         inventory.setItem(3, new ItemStack(Material.SHIELD));
+        inventory.setItem(4, new ItemStack(Material.IRON_SWORD));
 
-        assertEquals(EquipmentManager.Status.MISSING, manager.equip(player, EquipmentStep.SHIELD, true, true).status());
-        assertEquals(Material.SHIELD, inventory.getItemInMainHand().getType());
-        assertTrue(inventory.getItemInOffHand().isEmpty());
+        assertEquals(EquipmentManager.Status.EQUIPPED, manager.equip(player, EquipmentStep.SHIELD, true, true).status());
+        assertEquals(Material.SHIELD, inventory.getItemInOffHand().getType());
+        assertTrue(inventory.getItemInMainHand().isEmpty(), "the shield left the hand");
+        assertEquals(Material.IRON_SWORD, inventory.getItem(4).getType(), "other items are untouched");
+        assertEquals(3, inventory.getHeldItemSlot());
     }
 
     @Test
