@@ -183,7 +183,7 @@ class ReliabilityTest extends V11TestBase {
     }
 
     @Test
-    void aSwordInTheOffhandIsExplainedByDefaultAndSwappedIntoTheMainHandWhenSwappingIsAllowed() {
+    void aSwordInTheOffhandIsSwappedIntoTheMainHandAndTheShieldTakesItsPlace() {
         List<PlayerMock> squad = formSquad("NULL", 2);
         PlayerMock p = squad.get(1);
         PlayerInventory inv = bare(p);
@@ -193,13 +193,6 @@ class ReliabilityTest extends V11TestBase {
         inv.setItem(12, new ItemStack(Material.IRON_HELMET));
         inv.setItem(13, new ItemStack(Material.SHIELD));
         inv.setItemInOffHand(new ItemStack(Material.IRON_SWORD));
-        messages(squad.get(0));
-
-        run(squad.get(0), "squad", "start");
-        assertTrue(received(squad.get(0), "hands already busy with Shield"), "an honest reason, not 'missing'");
-        assertEquals(Material.IRON_SWORD, inv.getItemInOffHand().getType(), "nothing moved");
-
-        setConfig("equipment.require-empty-slots", false);
         int before = totalItems(p);
         run(squad.get(0), "squad", "start");
         tick(100);
@@ -209,15 +202,10 @@ class ReliabilityTest extends V11TestBase {
     }
 
     @Test
-    void anOccupiedOffhandBlocksByDefaultAndSwapsWhenAllowed() {
+    void anOccupiedOffhandIsSwappedAndTheOldItemGoesBackToTheInventory() {
         List<PlayerMock> squad = formSquad("NULL", 2);
         PlayerMock p = squad.get(1);
         p.getInventory().setItemInOffHand(new ItemStack(Material.TORCH, 8));
-        messages(squad.get(0));
-        run(squad.get(0), "squad", "start");
-        assertTrue(received(squad.get(0), "hands already busy with Shield"));
-
-        setConfig("equipment.require-empty-slots", false);
         int before = totalItems(p);
         run(squad.get(0), "squad", "start");
         tick(100);
@@ -271,7 +259,6 @@ class ReliabilityTest extends V11TestBase {
 
     @Test
     void swappingAWornPieceNeedsRoomAndNeverDropsIt() {
-        setConfig("equipment.require-empty-slots", false);
         PlayerMock p = server.addPlayer("Solo");
         PlayerInventory inv = bare(p);
         for (int i = 0; i < 36; i++) {
@@ -342,7 +329,6 @@ class ReliabilityTest extends V11TestBase {
         }
         assertTrue(java.util.Arrays.stream(squad.get(1).getInventory().getStorageContents())
                 .anyMatch(i -> i != null && i.isSimilar(helmet)), "the enchanted helmet came back unchanged");
-        assertEquals(0, squad.get(1).getInventory().getHeldItemSlot());
         assertTrue(world.getEntitiesByClass(Item.class).isEmpty());
     }
 

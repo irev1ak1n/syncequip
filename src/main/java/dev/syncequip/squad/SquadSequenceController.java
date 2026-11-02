@@ -108,7 +108,8 @@ public final class SquadSequenceController {
                     () -> members.add(member));
         }
         if (!problems.isEmpty()) {
-            messages.send(requester, "squad.start-blocked", ph("count", problems.size()));
+            messages.send(requester, members.isEmpty() ? "squad.start-blocked" : "squad.start-left-out",
+                    ph("count", problems.size()));
             int shown = 0;
             for (Map.Entry<String, Component> entry : problems.entrySet()) {
                 if (shown++ == MAX_LISTED) {
@@ -118,7 +119,9 @@ public final class SquadSequenceController {
                 messages.sendPlain(requester, "squad.start-blocked-line", ph("player", entry.getKey()),
                         ph("reason", entry.getValue()));
             }
-            return false;
+            if (members.isEmpty()) {
+                return false;
+            }
         }
         if (loadout.steps().isEmpty()) {
             messages.send(requester, "squad.loadout-empty");

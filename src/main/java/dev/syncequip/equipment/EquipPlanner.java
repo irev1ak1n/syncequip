@@ -34,6 +34,9 @@ public final class EquipPlanner {
 
         /** Puts an item in a slot ({@code null} empties it). {@code silent} hides the vanilla equip sound. */
         void set(int index, ItemStack item, boolean silent);
+
+        /** Changes the selected hotbar slot. */
+        void select(int hotbarSlot);
     }
 
     /** The slots of a real player. */
@@ -59,6 +62,11 @@ public final class EquipPlanner {
                     player.getEquipment().setItem(equipmentSlot(index), item, silent);
                 }
             }
+
+            @Override
+            public void select(int hotbarSlot) {
+                inventory.setHeldItemSlot(hotbarSlot);
+            }
         };
     }
 
@@ -70,11 +78,16 @@ public final class EquipPlanner {
             ItemStack item = real.get(i);
             items[i] = item == null ? null : item.clone();
         }
-        int held = real.held();
+        int[] held = {real.held()};
         return new Slots() {
             @Override
             public int held() {
-                return held;
+                return held[0];
+            }
+
+            @Override
+            public void select(int hotbarSlot) {
+                held[0] = hotbarSlot;
             }
 
             @Override
@@ -120,7 +133,8 @@ public final class EquipPlanner {
     /**
      * @param from         slot the item comes from
      * @param destination  slot it goes to
-     * @param displacedTo  where the item that was in the way goes, or -1 if the destination was empty
+     * @param displacedTo  where the item that was in the way goes, or -1 if the destination was empty. When
+     *                     {@code from} equals {@code destination} the item is already on the hotbar and is selected.
      */
     public record Move(int from, int destination, int displacedTo) {
     }
@@ -166,6 +180,11 @@ public final class EquipPlanner {
         }
         if (from < 0) {
             return new Decision(reservedHit ? Status.CONFLICT : Status.MISSING, null);
+        }
+
+        // A weapon already on the hotbar is switched to, so no item has to move at all.
+        if (step.isHand() && step == EquipmentStep.MAIN_HAND && from < 9) {
+            return new Decision(Status.MOVE, new Move(from, from, -1));
         }
 
         int displacedTo = -1;
@@ -226,6 +245,10 @@ public final class EquipPlanner {
      */
     public static ItemStack apply(Slots slots, EquipmentStep step, Move move, boolean silent) {
         ItemStack source = slots.get(move.from());
+        if (move.from() == move.destination()) {
+            slots.select(move.from());
+            return source;
+        }
         ItemStack current = slots.get(move.destination());
         ItemStack placed;
         if (step.isHand()) {

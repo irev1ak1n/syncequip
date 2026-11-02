@@ -76,6 +76,7 @@ squad:
   already-running: '<red>Your squad already has a sequence running.'
   nothing-to-cancel: '<red>Your squad has no sequence running.'
   start-blocked: '<red>Cannot start: <count> member(s) are not ready:'
+  start-left-out: '<yellow>Starting without <count> member(s) who are not ready:'
   start-blocked-line: ' <gray>•</gray> <white><player></white><gray>: <reason>'
   legacy-pad: '<yellow>This squad had a joining block at a fixed spot (<where>). That kind was replaced by block materials, so it was retired. Use <white>/syncequip squad block set</white> instead.'
   restored: '<gray>Saved settings for <squad> were restored (speed, loadout, joining block).'

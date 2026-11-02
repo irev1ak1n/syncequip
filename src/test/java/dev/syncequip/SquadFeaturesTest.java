@@ -210,7 +210,7 @@ class SquadFeaturesTest extends V11TestBase {
     }
 
     @Test
-    void anotherItemInTheHandBlocksTheStartByDefaultAndTheLeaderIsTold() {
+    void anotherItemInTheHandNoLongerBlocksTheSquad() {
         List<PlayerMock> squad = formSquad("NULL", 3);
         PlayerMock busy = squad.get(2);
         busy.getInventory().setItem(0, new ItemStack(Material.DIAMOND_PICKAXE));
@@ -218,14 +218,13 @@ class SquadFeaturesTest extends V11TestBase {
         run(squad.get(0), "squad", "start");
         tick(100);
 
-        assertTrue(received(squad.get(0), "hands already busy with Sword"));
-        assertEquals(0, countEquipped(squad.get(1)), "nobody starts when someone is blocked");
-        assertEquals(Material.DIAMOND_PICKAXE, busy.getInventory().getItem(0).getType());
+        assertFalse(received(squad.get(0), "Cannot start"));
+        assertEquals(Material.IRON_SWORD, busy.getInventory().getItemInMainHand().getType());
+        assertEquals(Material.DIAMOND_PICKAXE, busy.getInventory().getItem(15).getType());
     }
 
     @Test
-    void withSwappingAllowedTheHandItemSwapsWithTheSword() {
-        setConfig("equipment.require-empty-slots", false);
+    void theHandItemSwapsWithTheSword() {
         List<PlayerMock> squad = formSquad("NULL", 2);
         PlayerMock p = squad.get(1);
         p.getInventory().setItem(0, new ItemStack(Material.DIAMOND_PICKAXE));
@@ -299,7 +298,7 @@ class SquadFeaturesTest extends V11TestBase {
     }
 
     @Test
-    void wearingTheWrongMaterialBlocksButTheRightOneIsAccepted() {
+    void wearingTheWrongMaterialIsSwappedAndTheRightOneIsAccepted() {
         List<PlayerMock> squad = formSquad("NULL", 2);
         squad.get(1).getInventory().setBoots(new ItemStack(Material.IRON_BOOTS));
         run(squad.get(0), "squad", "start");
@@ -312,13 +311,14 @@ class SquadFeaturesTest extends V11TestBase {
         });
         squad.get(1).getInventory().setBoots(new ItemStack(Material.LEATHER_BOOTS));
         run(squad.get(0), "squad", "loadout", "set", "boots", "netherite");
+        run(squad.get(0), "squad", "loadout", "set", "offhand", "none");
         giveNetherite(squad.get(0), true, false);
         giveNetherite(squad.get(1), true, false);
         squad.get(1).getInventory().setBoots(new ItemStack(Material.LEATHER_BOOTS));
-        run(squad.get(0), "squad", "unequip");
         run(squad.get(0), "squad", "start");
-        tick(5);
-        assertTrue(received(squad.get(0), "already wearing Netherite Boots"));
+        tick(100);
+        assertEquals(Material.NETHERITE_BOOTS, squad.get(1).getInventory().getBoots().getType());
+        assertTrue(squad.get(1).getInventory().contains(Material.LEATHER_BOOTS), "the old boots came back");
     }
 
     @Test

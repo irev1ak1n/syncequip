@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.2 switching instead of refusing
+
+- Occupied slots no longer stop a sequence. A sword on the hotbar is selected at its step, a sword in the inventory swaps
+  into the held slot, and worn armor or the offhand item is swapped out and returned to the inventory. Nothing is dropped.
+- A squad start no longer fails because one member cannot take part. Members who are missing an item or have no room are
+  left out with a reason, and the rest equip together. If nobody can take part, the start is refused as before.
+- `equipment.require-empty-slots` is retired. If it is still `true` in your config, the log warns that it is ignored.
+
 ## 1.1.1 joining blocks by material
 
 - **Joining blocks are now a block material, not a coordinate.** `/se squad block set obsidian` (or `set` alone to use the

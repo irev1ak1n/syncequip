@@ -143,7 +143,7 @@ class SquadSequenceTest extends PluginTestBase {
     }
 
     @Test
-    void memberWithoutEquipmentBlocksStartAndIsNamed() {
+    void memberWithoutEquipmentIsLeftOutAndNamedWhileTheOthersEquip() {
         List<PlayerMock> squad = formSquad(3);
         squad.get(2).getInventory().setItem(10, null);
         run(squad.getFirst(), "squad", "start");
@@ -152,7 +152,8 @@ class SquadSequenceTest extends PluginTestBase {
         List<String> leaderMessages = messages(squad.getFirst());
         assertTrue(leaderMessages.stream().anyMatch(m -> m.contains("not ready")));
         assertTrue(leaderMessages.stream().anyMatch(m -> m.contains("Soldier2") && m.contains("missing Leggings")));
-        assertTrue(squad.stream().allMatch(p -> countEquipped(p) == 0));
+        assertEquals(5, countEquipped(squad.get(1)));
+        assertEquals(0, countEquipped(squad.get(2)));
     }
 
     @Test

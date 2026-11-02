@@ -19,10 +19,8 @@ equipment:
     - HELMET
     - SHIELD
 
-  # true:  a step only runs if its destination slot (armor slot / offhand) is empty.
-  # false: the piece currently worn is swapped back into the inventory slot the new
-  #        piece came from. Nothing is ever dropped or deleted.
-  require-empty-slots: true
+  # Worn armor, the offhand and the held item are swapped automatically. A sword on the
+  # hotbar is selected, and displaced items go back to the inventory. Nothing is dropped.
 
   # What to do when a step's item is missing or its slot is occupied:
   #   ABORT - refuse to start; if it happens mid-sequence, stop that player's sequence

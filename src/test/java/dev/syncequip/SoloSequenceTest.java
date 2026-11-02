@@ -100,14 +100,15 @@ class SoloSequenceTest extends PluginTestBase {
     }
 
     @Test
-    void occupiedSlotAbortsByDefault() {
+    void wornBootsAreSwappedForTheKitBoots() {
         PlayerMock player = playerWithKit("Steve");
         player.getInventory().setBoots(new ItemStack(Material.LEATHER_BOOTS));
         run(player, "solo");
-        tick(20);
+        tick(60);
 
-        assertEquals(1, countEquipped(player));
-        assertTrue(received(player, "already wearing Boots"));
+        assertEquals(5, countEquipped(player));
+        assertEquals(Material.IRON_BOOTS, player.getInventory().getBoots().getType());
+        assertTrue(player.getInventory().contains(Material.LEATHER_BOOTS));
     }
 
     @Test

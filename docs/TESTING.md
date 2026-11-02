@@ -43,7 +43,7 @@ Result key: ✅ pass, ❌ fail, ➖ not tried.
 - [ ] Inventory afterwards: the five items are gone from storage and nothing else changed.
 - [ ] Running `/syncequip solo` again right away shows a cooldown message.
 - [ ] After the cooldown, with armor taken off and given back, it works again.
-- [ ] Wearing boots already: the command refuses and says "already wearing Boots".
+- [ ] Wearing other boots already: they are swapped for the kit boots and the old ones return to the inventory.
 - [ ] Missing the helmet: the command refuses and says "missing Helmet". Nothing was equipped.
 - [ ] With the shield missing and `missing-item-policy: SKIP` in config (then `/syncequip reload`),
       the other four pieces go on and the shield step is skipped.
@@ -133,8 +133,8 @@ Note what is in your inventory before each test so you can compare afterwards.
 - [ ] Teleport to another world or dimension mid-sequence (`/execute in minecraft:the_nether run tp @s ~ ~ ~`
       from another op). The sequence stops with a clear message.
 - [ ] Stop the server (`stop`) during a sequence, then restart. Inventories are intact.
-- [ ] With `require-empty-slots: false`, wearing a piece already: it gets swapped back into the inventory
-      slot and nothing is lost.
+- [ ] Holding an axe with the sword on another hotbar slot: the selected slot switches to the sword at its step.
+- [ ] Totem in the offhand: the shield replaces it and the totem returns to the inventory.
 - [ ] Throughout all of the above, the total item count never changes.
 
 ## 8. Lag and TPS (optional)

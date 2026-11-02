@@ -33,7 +33,7 @@ class ConfigManagerTest {
         assertEquals(List.of(), warnings);
         assertEquals(2, settings.intervalTicks());
         assertEquals(ConfigManager.DEFAULT_ORDER, settings.order());
-        assertTrue(settings.requireEmptySlots());
+        assertFalse(settings.requireEmptySlots());
         assertEquals(MissingItemPolicy.ABORT, settings.missingItemPolicy());
         assertEquals(3, settings.squadCountdownSeconds());
         assertEquals(30, settings.maxSquadSize());

@@ -243,9 +243,10 @@ How items are used:
 - Something already in the right slot that the loadout accepts counts as done (a held sword needs no move).
 - A missing item follows `equipment.missing-item-policy` unless the slot is optional. The leader sees who is
   missing what.
-- The main hand is the slot the player has selected. A sword from the inventory moves into it if it is empty. If it
-  holds something else, the squad cannot start (or with `equipment.require-empty-slots: false` the two items swap).
-  The selected slot never changes.
+- The main hand is the slot the player has selected. A sword already on the hotbar is selected at its step. A sword in
+  the main inventory swaps with the held item, which goes back to where the sword was. Worn armor and the offhand are
+  swapped the same way, and a displaced item needs a free slot or the same swap spot. Members who cannot take part
+  (missing item, no room) are left out with a reason and the rest continue.
 - Slots set to `none` are left out of validation, steps and sounds.
 - Each squad has its own loadout. Solo sequences keep the original armor and shield behaviour unless
   `loadout.solo-uses-default: true`.
@@ -324,7 +325,6 @@ Configuration (`demo:` section in `config.yml`): `interval-ticks`, `countdown-se
 equipment:
   interval-ticks: 2            # 1-10 ticks between steps
   order: [BOOTS, LEGGINGS, CHESTPLATE, HELMET, SHIELD]
-  require-empty-slots: true    # false = swap the worn piece back into the source slot
   missing-item-policy: ABORT   # ABORT or SKIP
   lock-inventory-during-sequence: true
 
@@ -526,7 +526,7 @@ inventory results with simulated players, and it cannot check animations or soun
 
 | Problem | Fix |
 |---|---|
-| `Cannot start: already wearing Boots` | Take the piece off, or set `equipment.require-empty-slots: false` to swap it. |
+| `Cannot start: no room for the old Boots` | Free an inventory slot. Worn pieces are swapped back into the inventory. |
 | `Cannot start: missing Shield` | Put the item anywhere in your inventory **except** the slot you are holding. Or set `missing-item-policy: SKIP`. |
 | Sneak + F does nothing | Set `controls.sneak-swap-trigger: true`, check `syncequip.hotkey`, check the cooldown. Make sure you are actually sneaking when you press the key. |
 | Sounds play twice | Shouldn't happen. If another plugin also plays equip sounds, set `sounds.enabled: false`. |

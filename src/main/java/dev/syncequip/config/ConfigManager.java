@@ -57,7 +57,12 @@ public final class ConfigManager {
         int interval = intInRange(config, "equipment.interval-ticks", 2,
                 SequenceTimeline.MIN_INTERVAL, SequenceTimeline.MAX_INTERVAL, warnings);
         List<EquipmentStep> order = parseOrder(config, warnings);
-        boolean requireEmpty = config.getBoolean("equipment.require-empty-slots", true);
+        // Occupied slots are always swapped now. The old option is read only to tell the owner it no longer applies.
+        boolean requireEmpty = false;
+        if (config.getBoolean("equipment.require-empty-slots", false)) {
+            warnings.add("equipment.require-empty-slots is no longer used. Worn items and held items are swapped "
+                    + "automatically and the old ones go back to the inventory.");
+        }
         MissingItemPolicy policy = parseEnum(config, "equipment.missing-item-policy", MissingItemPolicy.class,
                 MissingItemPolicy.ABORT, warnings);
         boolean lockInventory = config.getBoolean("equipment.lock-inventory-during-sequence", true);
