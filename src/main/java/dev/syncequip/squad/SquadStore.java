@@ -71,9 +71,6 @@ public final class SquadStore {
                         warnings.add("squads.yml: " + name + " lists a member that is not a valid id and it was ignored");
                     }
                 }
-            } else {
-                // Files from before members were saved: the owner is the squad's one member and leader.
-                profile.memberSet().add(owner);
             }
             if (section.isInt("speed")) {
                 int speed = section.getInt("speed");
@@ -106,6 +103,12 @@ public final class SquadStore {
                         + "). That kind was replaced by block materials, so it was retired and will not add anyone.");
             } else if (section.isString("legacy-pad")) {
                 profile.setLegacyPad(section.getString("legacy-pad"));
+            }
+            // Files from before members were saved: the owner is the one member and leader of a squad that has real
+            // settings. A squad that only had a retired pad has nothing worth bringing back.
+            if (!section.contains("members") && (profile.speed() != null || profile.loadout() != null
+                    || profile.blockMaterial() != null)) {
+                profile.memberSet().add(owner);
             }
             result.add(profile);
         }

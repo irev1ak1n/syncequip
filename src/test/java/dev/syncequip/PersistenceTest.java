@@ -194,6 +194,32 @@ class PersistenceTest extends V11TestBase {
     }
 
     @Test
+    void anOldPadOnlySquadDoesNotTakeTheOwnerAwayFromTheirRealSquad() throws Exception {
+        UUID owner = UUID.randomUUID();
+        Path file = plugin.getDataFolder().toPath().resolve("squads.yml");
+        Files.writeString(file, """
+                version: 1
+                squads:
+                  old:
+                    name: Old
+                    owner: %s
+                    legacy-pad: world 1 64 1
+                  real:
+                    name: Real
+                    owner: %s
+                    block:
+                      material: obsidian
+                      world: world
+                """.formatted(owner, owner));
+        SquadManager fresh = new SquadManager(System::currentTimeMillis);
+        List<String> warnings = new ArrayList<>();
+        fresh.loadProfiles(new SquadStore(file, plugin.getLogger()).load(warnings));
+        fresh.restoreSquads(warnings);
+        assertEquals("Real", fresh.squadOf(owner).orElseThrow().name());
+        assertTrue(fresh.squadByName("Old").isEmpty());
+    }
+
+    @Test
     void aPlayerListedInTwoSquadsIsNeverMovedFromTheFirst() throws Exception {
         UUID a = UUID.randomUUID();
         UUID b = UUID.randomUUID();
