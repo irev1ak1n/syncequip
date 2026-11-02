@@ -14,7 +14,7 @@ SyncEquip is a Minecraft Java plugin that lets players synchronize armor and wea
 2. Stop your server, or leave it running if you will reload afterwards.
 3. Copy the jar into the server's `plugins/` folder.
 4. Start the server. SyncEquip creates `plugins/SyncEquip/` with `config.yml`, `messages.yml` and `squads.yml`.
-5. Check the console for `SyncEquip enabled`. In game, run `/syncequip help` to confirm it works.
+5. Check that SyncEquip appears in `/plugins` (green). In game, run `/syncequip help` to confirm it works.
 6. Optional: edit `config.yml` or `messages.yml`, then run `/syncequip reload`.
 
 There are no other dependencies. To update, replace the jar while the server is stopped; your config and saved squads are kept.
