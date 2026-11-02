@@ -41,6 +41,20 @@ CI (`.github/workflows/build.yml`) runs `./gradlew build` on JDK 25 for every pu
 
 Keep test servers outside this repository.
 
+## Guided tour (5 test players)
+
+`/se demo tour` plays an eight-stage walkthrough with five Mineflayer test players on an isolated, localhost-only
+offline-mode server (never your real server). From the `bot-test` folder:
+
+```
+start-tour.bat YourMinecraftName
+```
+
+Then join `localhost:25599` with your own client (Minecraft 26.3), face a flat open area and type `/se demo tour`.
+Controls: `/se demo tour pause|resume|restart|stop`. Each stage shows its title, waits for it to fade out plus a short
+pause, and only then starts. The tour needs exactly the configured number of bots (`demo.tour.bots`, default 5). It
+checks before every stage that all five are online and in place, and moves or re-sends a bot that isn't.
+
 ## Releasing
 
 1. Update `version` in `build.gradle.kts` and add the changes to `CHANGELOG.md`.

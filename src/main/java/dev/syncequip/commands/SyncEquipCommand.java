@@ -205,7 +205,7 @@ public final class SyncEquipCommand implements BasicCommand {
         switch (result) {
             case STARTED -> messages.send(player, "tour.started", ph("prefix", tour.prefix()));
             case RUNNING -> messages.send(player, "tour.running");
-            case NO_BOTS -> messages.send(player, "tour.no-bots", ph("prefix", tour.prefix()));
+            case NO_BOTS -> messages.send(player, "tour.no-bots", ph("prefix", tour.prefix()), ph("count", tour.required()));
         }
     }
 

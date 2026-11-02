@@ -6,29 +6,44 @@ SyncEquip is a Minecraft Java plugin that lets players synchronize armor and wea
 
 **[Download SyncEquip from GitHub Releases](https://github.com/irev1ak1n/syncequip/releases/latest)**
 
-| | |
-|---|---|
-| Version | 1.1.2 |
-| Server | [Paper](https://papermc.io/) **26.3** (Minecraft Java Edition 26.3) |
-| Java | 25, as required by Paper 26.x |
-| Players | Any vanilla Java client for that version. No mods or resource packs |
+On that page, scroll to **Assets** and click `SyncEquip-1.1.2.jar`. That file is the whole plugin.
 
-Only Paper 26.3 is supported and tested. Spigot, other Minecraft versions and Folia are not supported.
+## Who installs it?
 
-## Installation
+Only the **server owner or admin** installs SyncEquip, once, on the server. **Players don't download or install anything.** They join as normal with a regular Minecraft Java client.
 
-1. Download `SyncEquip-1.1.2.jar` from the [latest release](https://github.com/irev1ak1n/syncequip/releases/latest).
-2. Put the file in your server's `plugins` folder.
-3. Restart the server.
+## What you need
 
-That's it. SyncEquip has no dependencies and creates its own settings in `plugins/SyncEquip/`. To check it loaded, run
-`/plugins` (SyncEquip should be green) or `/syncequip help` in game.
+- A **Paper** server for **Minecraft 26.3** (get Paper at [papermc.io](https://papermc.io/)). It will not run on other Minecraft versions, and Spigot and Folia are not supported.
+- **Java 25** on the server (Paper 26.x needs it; most hosting panels let you pick it).
 
-**Updating:** stop the server, delete the old SyncEquip jar from `plugins`, put the new one in, and start the server.
-Your settings and saved squads are kept. Edit `plugins/SyncEquip/config.yml` or `messages.yml` and run `/syncequip reload`
-to change settings without a restart.
+## Install it
 
-Want to build it yourself? See the [Developer Guide](docs/DEVELOPER_GUIDE.md).
+1. Download `SyncEquip-1.1.2.jar` (see above).
+2. Put it in your server's **`plugins`** folder:
+   - **Hosting panel** (for example Pterodactyl or Apex): open the **File Manager**, open the `plugins` folder, click **Upload** and choose the jar.
+   - **Your own computer or server:** copy the file into the `plugins` folder next to `paper.jar`.
+3. **Restart** the server (use the Restart button, or type `stop` in the console and start it again).
+4. Check it worked: in game or in the console, run `/plugins`. **SyncEquip** should be green. Then run `/syncequip help`.
+
+SyncEquip makes its own settings in `plugins/SyncEquip/`. Updating later: stop the server, replace the old jar with the new one, and start again. Your settings and squads are kept.
+
+## Your first squad
+
+You need to be an operator, or have the squad permissions (everyone has them by default, see [Permissions](#permissions)). Every player taking part needs a sword, a shield and a full set of armor in their inventory. The commands start with `/syncequip`, or `/se` for short.
+
+1. **Create a squad:** `/se squad create Alpha`. You are the leader.
+2. **Pick a joining block:** place an obsidian block, stand on it and run `/se squad block set`. (Or just run `/se squad block set obsidian` to use every obsidian block.) Anyone who steps onto obsidian now joins your squad.
+3. **Get your friends to step on it.** You can also invite people with `/se squad invite <player>`.
+4. **Start:** run `/se squad start`. After a 3 second countdown, everyone puts their armor on piece by piece, all on the same moment. `/se squad unequip` takes it all off again.
+
+Missing items are swapped in from the inventory automatically, and anyone who can't take part is skipped with a reason while everyone else goes on.
+
+### Want to see it first?
+
+Operators can run `/se demo spawn 5` and `/se demo start` for a quick demo with dummy mobs, no friends needed.
+
+Want to build it yourself, or run the guided tour with test players? See the [Developer Guide](docs/DEVELOPER_GUIDE.md).
 
 ## Permissions
 

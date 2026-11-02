@@ -11,7 +11,7 @@ if "%PLAYER%"=="" (
     exit /b 1
 )
 set BOTS=%~2
-if "%BOTS%"=="" set BOTS=6
+if "%BOTS%"=="" set BOTS=5
 
 where node >nul 2>nul
 if errorlevel 1 (

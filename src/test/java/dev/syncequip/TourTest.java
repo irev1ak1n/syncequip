@@ -61,7 +61,7 @@ class TourTest extends V11TestBase {
             server.getScheduler().performOneTick();
             for (String line : messages(viewer)) {
                 int at = line.indexOf("[Tour] ");
-                if (at < 0) {
+                if (at < 0 || !line.substring(at + 7).matches("[1-8]/8 .*")) {
                     continue;
                 }
                 String[] parts = line.substring(at + 7).split(" - ", 2);
@@ -72,6 +72,63 @@ class TourTest extends V11TestBase {
             }
         }
         assertEquals(8, titles.size(), "all eight stages were shown: " + titles);
+    }
+
+    /** A stage's demonstration starts only after its title has faded out (0.25 + 2.5 + 0.5 s = 65 ticks) plus a pause. */
+    @Test
+    void everyDemonstrationWaitsForItsTitleToFadeAndThenAShortPause() {
+        run(viewer, "demo", "tour");
+        int now = 0;
+        int titleAt = -1;
+        int stages = 0;
+        int checked = 0;
+        for (; now < 12000 && plugin.tour().running(); now++) {
+            server.getScheduler().performOneTick();
+            if (messages(viewer).stream().anyMatch(m -> m.contains("[Tour] ") && m.matches(".*\\[Tour\\] [1-8]/8 .*"))) {
+                titleAt = now;
+                stages++;
+            }
+            boolean busy = bots.stream().anyMatch(b -> plugin.sequenceService().scheduler().isBusy(b.getUniqueId()));
+            if (busy && titleAt >= 0) {
+                assertTrue(now - titleAt >= 80, "action began " + (now - titleAt) + " ticks after its title");
+                checked++;
+                titleAt = -1;
+            }
+        }
+        assertEquals(11, stages, "eight stages, speed stage shown four times");
+        assertTrue(checked >= 8, "sequence stages checked: " + checked);
+    }
+
+    @Test
+    void theTourNeedsExactlyTheConfiguredNumberOfBotsAndUsesFive() {
+        assertEquals(5, plugin.tour().required());
+        bots.get(4).kick();
+        server.getScheduler().performOneTick();
+        run(viewer, "demo", "tour");
+        assertFalse(plugin.tour().running());
+        assertTrue(received(viewer, "5 test players"));
+    }
+
+    @Test
+    void everyBotEndsUpOnObsidianInTheSquadAndInAnEvenLine() {
+        run(viewer, "demo", "tour");
+        boolean checked = false;
+        for (int t = 0; t < 12000 && plugin.tour().running(); t++) {
+            server.getScheduler().performOneTick();
+            if (!checked && bots.stream().allMatch(b -> plugin.sequenceService().scheduler().isBusy(b.getUniqueId()))) {
+                checked = true;
+                for (PlayerMock bot : bots) {
+                    assertTrue(plugin.squads().squadOf(bot.getUniqueId()).isPresent(), bot.getName() + " in the squad");
+                    assertEquals(Material.OBSIDIAN, bot.getLocation().getBlock().getRelative(0, -1, 0).getType(),
+                            bot.getName() + " stands on obsidian");
+                }
+                for (int i = 1; i < bots.size(); i++) {
+                    double gap = bots.get(i).getLocation().distance(bots.get(i - 1).getLocation());
+                    assertEquals(2.0, gap, 0.01, "even spacing");
+                }
+            }
+        }
+        assertTrue(checked, "all five took part in a synchronized sequence");
     }
 
     @Test
@@ -147,7 +204,8 @@ class TourTest extends V11TestBase {
     void botsAreToldToWalkWithAPrivateCue() {
         run(viewer, "demo", "tour");
         tick(400);
-        assertTrue(received(bots.get(1), "[SE-TOUR] walk"), "joiners get the walk cue");
-        assertFalse(received(bots.get(0), "[SE-TOUR] walk"), "the leader is already in the squad");
+        for (PlayerMock bot : bots) {
+            assertTrue(received(bot, "[SE-TOUR] goto"), bot.getName() + " gets the walk cue, the leader included");
+        }
     }
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Guided tour: each stage's title is shown first, and the demonstration starts only after it has faded out plus a short
+  pause. The speed stage shows a title for each speed, then takes everyone's gear off and puts it on again at that speed.
+- The tour uses five test players by default (`demo.tour.bots`) and checks before every stage that all are online and in
+  place. All five, the leader included, walk onto the obsidian; a bot that does not is sent again, then placed, and the
+  viewer is told.
+
 ## 1.1.2 switching instead of refusing
 
 - Occupied slots no longer stop a sequence. A sword on the hotbar is selected at its step, a sword in the inventory swaps

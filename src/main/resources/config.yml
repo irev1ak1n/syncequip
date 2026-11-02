@@ -149,3 +149,5 @@ demo:
   tour:
     # The guided tour (/syncequip demo tour) uses online players whose names start with this.
     bot-prefix: TourBot
+    # How many test players the tour needs, leader included (2-10).
+    bots: 5

@@ -265,7 +265,7 @@ tour:
   usage: '<red>Usage: /syncequip demo tour [start|pause|resume|restart|stop]'
   started: '<green>Tour started. Sit back and watch, titles explain each stage. Control it with <white>/syncequip demo tour pause|resume|restart|stop</white>.'
   running: '<red>A tour is already running. Use <white>/syncequip demo tour restart</white> or <white>stop</white>.'
-  no-bots: '<red>The tour needs at least 2 test players whose names start with <prefix>. Start them with start-tour.bat in the bot-test folder.'
+  no-bots: '<red>The tour needs <count> test players whose names start with <prefix>. Start them with start-tour.bat in the bot-test folder.'
   pause: '<yellow>Tour paused. Sequences already running will finish.'
   resume: '<green>Tour resumed.'
   stop: '<yellow>Tour stopped and cleaned up.'
