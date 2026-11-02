@@ -289,6 +289,57 @@ class BlockTest extends V11TestBase {
     }
 
     @Test
+    void joiningIsOnRightAfterSettingTheMaterialWithoutEnable() {
+        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        run(leader, "squad", "block", "set", "obsidian");
+        assertTrue(plugin.squads().profile("NULL").orElseThrow().blockEnabled());
+        PlayerMock walker = server.addPlayer("Walker");
+        stepOn(walker, put(Material.OBSIDIAN, 1, 64, 1));
+        assertTrue(isMemberOf(walker, "NULL"), "no enable command and no key press needed");
+    }
+
+    @Test
+    void settingANewMaterialTurnsJoiningBackOn() {
+        PlayerMock leader = leaderOf("NULL", "obsidian");
+        run(leader, "squad", "block", "disable");
+        run(leader, "squad", "block", "set", "gold_block");
+        assertTrue(plugin.squads().profile("NULL").orElseThrow().blockEnabled());
+        PlayerMock walker = server.addPlayer("Walker");
+        stepOn(walker, put(Material.GOLD_BLOCK, 2, 64, 2));
+        assertTrue(isMemberOf(walker, "NULL"));
+    }
+
+    @Test
+    void playersAlreadyStandingOnTheBlockJoinWhenItIsAssignedOrEnabled() {
+        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        PlayerMock standing = server.addPlayer("Standing");
+        PlayerMock elsewhere = server.addPlayer("Elsewhere");
+        standing.teleport(standingOn(put(Material.OBSIDIAN, 5, 64, 5)));
+        elsewhere.teleport(standingOn(put(Material.STONE, 9, 64, 9)));
+
+        run(leader, "squad", "block", "set", "obsidian");
+
+        assertTrue(isMemberOf(standing, "NULL"), "already on obsidian, so they join without moving");
+        assertFalse(isMemberOf(elsewhere, "NULL"));
+        assertEquals(1, messages(standing).stream().filter(m -> m.contains("You joined squad NULL")).count());
+
+        run(standing, "squad", "leave");
+        run(leader, "squad", "block", "disable");
+        run(leader, "squad", "block", "enable");
+        assertTrue(isMemberOf(standing, "NULL"), "enabling also picks up players standing on it");
+    }
+
+    @Test
+    void anAdminSettingTheBlockWhileStandingOnItDoesNotJoinTheSquad() {
+        leaderWithSquad("Boss", "NULL");
+        PlayerMock admin = server.addPlayer("Admin");
+        admin.setOp(true);
+        admin.teleport(standingOn(put(Material.OBSIDIAN, 5, 64, 5)));
+        run(admin, "squad", "block", "set", "obsidian", "NULL");
+        assertFalse(isMemberOf(admin, "NULL"));
+    }
+
+    @Test
     void theWholeFeatureCanBeSwitchedOffInTheConfig() {
         leaderOf("NULL", "obsidian");
         setConfig("blocks.enabled", false);

@@ -45,11 +45,7 @@ public final class JoinBlockListener implements Listener {
         if (!squads.hasBlocks(worldId, allWorlds) || player.getGameMode() == GameMode.SPECTATOR) {
             return;
         }
-        // Standing on a full block puts the feet exactly on its top, so the support is the block below. On a slab or
-        // a carpet the feet are inside the block, which is then the support.
-        int y = to.getBlockY();
-        int supportY = to.getY() - y < 1.0E-4 ? y - 1 : y;
-        Material support = world.getBlockAt(to.getBlockX(), supportY, to.getBlockZ()).getType();
+        Material support = JoinBlockService.supportMaterial(to);
         squads.blockFor(worldId, support, allWorlds).ifPresent(profile -> service.onStep(player, profile));
     }
 

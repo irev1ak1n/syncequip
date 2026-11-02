@@ -132,6 +132,35 @@ public final class JoinBlockService {
         lastLeaderBar.remove(player);
     }
 
+    /** The material of the block a player at this location is standing on. */
+    public static Material supportMaterial(Location at) {
+        int y = at.getBlockY();
+        // Feet exactly on a block top means the block below. Feet inside a slab or carpet means that block.
+        int supportY = at.getY() - y < 1.0E-4 ? y - 1 : y;
+        return at.getWorld().getBlockAt(at.getBlockX(), supportY, at.getBlockZ()).getType();
+    }
+
+    /**
+     * Adds the players who are already standing on the squad's joining block, who would otherwise have to step off
+     * and on again. The player who made the change is left out.
+     */
+    public void sweep(SquadProfile profile, Player except) {
+        Material material = profile.blockMaterial();
+        if (material == null || !profile.blockEnabled()) {
+            return;
+        }
+        boolean all = allWorlds();
+        for (Player player : server.getOnlinePlayers()) {
+            UUID worldId = player.getWorld().getUID();
+            if (player == except || player.getGameMode() == org.bukkit.GameMode.SPECTATOR
+                    || supportMaterial(player.getLocation()) != material
+                    || squads.blockFor(worldId, material, all).orElse(null) != profile) {
+                continue;
+            }
+            onStep(player, profile);
+        }
+    }
+
     // ------------------------------------------------------------------ choosing the material
 
     /** The block directly under the player's feet: a slab they stand on, or the block below an open space. */

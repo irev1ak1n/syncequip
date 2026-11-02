@@ -305,6 +305,8 @@ public final class SquadManager {
         }
         unindex(profile);
         profile.setBlock(material, worldName, worldId);
+        // Giving a squad a joining block always turns joining on, even if an earlier one had been switched off.
+        profile.setBlockEnabled(true);
         index(profile, worldId);
         changed();
         return Status.OK;

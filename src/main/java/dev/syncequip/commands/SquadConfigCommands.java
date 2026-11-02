@@ -218,9 +218,12 @@ public final class SquadConfigCommands {
                     return;
                 }
                 switch (blocks.set(player, target.profile(), material)) {
-                    case OK -> messages().send(player, "block.set", ph("squad", target.profile().name()),
-                            ph("material", JoinBlockService.pretty(target.profile().blockMaterial())),
-                            ph("world", target.profile().blockWorldName()));
+                    case OK -> {
+                        messages().send(player, "block.set", ph("squad", target.profile().name()),
+                                ph("material", JoinBlockService.pretty(target.profile().blockMaterial())),
+                                ph("world", target.profile().blockWorldName()));
+                        blocks.sweep(target.profile(), player);
+                    }
                     case NOT_SOLID -> messages().send(player, "block.not-solid");
                     case CONFLICT -> messages().send(player, "block.conflict",
                             ph("material", JoinBlockService.pretty(material != null ? material
@@ -247,6 +250,9 @@ public final class SquadConfigCommands {
                 boolean on = action.equals("enable");
                 squads().setBlockEnabled(target.profile(), on);
                 messages().send(player, on ? "block.enabled" : "block.disabled", ph("squad", target.profile().name()));
+                if (on) {
+                    blocks.sweep(target.profile(), player);
+                }
             }
             case "info" -> {
                 Target target = resolve(player, args.length > 3 ? args[3] : null, false);
