@@ -5,6 +5,7 @@ import static dev.syncequip.util.MessageUtil.ph;
 import dev.syncequip.SyncEquipPlugin;
 import dev.syncequip.config.SyncEquipSettings;
 import dev.syncequip.demo.DemoManager;
+import dev.syncequip.demo.TourManager;
 import dev.syncequip.equipment.SequenceService;
 import dev.syncequip.squad.Squad;
 import dev.syncequip.squad.SquadManager;
@@ -36,7 +37,8 @@ public final class SyncEquipCommand implements BasicCommand {
     public static final String PERMISSION_DEMO = "syncequip.demo";
 
     private static final List<String> ROOT = List.of("solo", "unequip", "squad", "demo", "settings", "reload", "help");
-    private static final List<String> DEMO = List.of("spawn", "start", "repeat", "stop", "reset", "clear", "speed");
+    private static final List<String> DEMO = List.of("spawn", "start", "repeat", "stop", "reset", "clear", "speed",
+            "tour");
     private static final List<String> SQUAD = List.of("create", "invite", "join", "leave", "list", "info", "start",
             "cancel", "unequip", "transfer", "speed", "block", "loadout", "disband");
     private static final List<String> SQUAD_CONFIG = List.of("info", "speed", "block", "pad", "loadout", "disband");
@@ -159,6 +161,7 @@ public final class SyncEquipCommand implements BasicCommand {
             case "stop" -> messages.send(sender, demo.stop() ? "demo.stopping" : "demo.nothing-running");
             case "reset" -> messages.send(sender, "demo.reset", ph("count", demo.reset()));
             case "clear" -> messages.send(sender, "demo.cleared", ph("count", demo.clear()));
+            case "tour" -> tour(sender, args);
             case "speed" -> {
                 Integer ticks = args.length > 2 ? parseInt(args[2]) : null;
                 if (ticks == null || ticks < 1 || ticks > 10) {
@@ -169,6 +172,40 @@ public final class SyncEquipCommand implements BasicCommand {
                 }
             }
             default -> messages.send(sender, "demo.usage");
+        }
+    }
+
+    private void tour(CommandSender sender, String[] args) {
+        MessageUtil messages = plugin.messages();
+        TourManager tour = plugin.tour();
+        String action = args.length > 2 ? args[2].toLowerCase(Locale.ROOT) : "start";
+        if (action.equals("stop") || action.equals("pause") || action.equals("resume")) {
+            boolean ok = switch (action) {
+                case "stop" -> tour.stop();
+                case "pause" -> tour.running() && !tour.paused();
+                default -> tour.paused();
+            };
+            if (action.equals("pause") && ok) {
+                tour.pause();
+            } else if (action.equals("resume") && ok) {
+                tour.resume();
+            }
+            messages.send(sender, ok ? "tour." + action : "tour.nothing");
+            return;
+        }
+        if (!action.equals("start") && !action.equals("restart")) {
+            messages.send(sender, "tour.usage");
+            return;
+        }
+        if (!(sender instanceof Player player)) {
+            messages.send(sender, "command.players-only");
+            return;
+        }
+        TourManager.StartResult result = action.equals("restart") ? tour.restart(player) : tour.start(player);
+        switch (result) {
+            case STARTED -> messages.send(player, "tour.started", ph("prefix", tour.prefix()));
+            case RUNNING -> messages.send(player, "tour.running");
+            case NO_BOTS -> messages.send(player, "tour.no-bots", ph("prefix", tour.prefix()));
         }
     }
 
@@ -472,6 +509,7 @@ public final class SyncEquipCommand implements BasicCommand {
                     case "spawn" -> filter(Stream.of("1", "5", "10", "20"), args[2]);
                     case "speed" -> filter(Stream.of("1", "2", "4", "6", "10"), args[2]);
                     case "repeat" -> filter(Stream.of("2", "3", "5", "10"), args[2]);
+                    case "tour" -> filter(Stream.of("start", "pause", "resume", "restart", "stop"), args[2]);
                     default -> List.of();
                 };
             }

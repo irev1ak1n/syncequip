@@ -168,6 +168,7 @@ help:
         - ' <white>/syncequip demo reset</white> <gray>- take their gear off so it can replay'
         - ' <white>/syncequip demo clear</white> <gray>- remove the husks'
         - ' <white>/syncequip demo speed \<ticks></white> <gray>- ticks between pieces, 1 to 10'
+        - ' <white>/syncequip demo tour [start|pause|resume|restart|stop]</white> <gray>- guided tour with test players'
     admin:
       title: 'Admin'
       lines:
@@ -175,7 +176,7 @@ help:
         - ' <gray>Administrators (<white>syncequip.admin</white>) can start, cancel, unequip and configure any squad,'
         - ' <gray>and use <white>/syncequip squad info|pad|disband \<squad></white> on squads they are not in.'
 demo:
-  usage: '<red>Usage: /syncequip demo \<spawn \<count>|start|repeat \<times>|stop|reset|clear|speed \<ticks>>'
+  usage: '<red>Usage: /syncequip demo \<spawn \<count>|start|repeat \<times>|stop|reset|clear|speed \<ticks>|tour>'
   count-invalid: '<red>Choose a number of mobs from 1 to <max>.'
   repeat-invalid: '<red>Usage: /syncequip demo repeat \<times> (1 to <max>)'
   speed-invalid: '<red>Choose a whole number of ticks from 1 to 10. The current interval is <current> ticks.'
@@ -259,3 +260,13 @@ loadout:
   header: '<gold>Loadout of <white><squad></white> <gray>(<source>)<gold>:'
   line: ' <gray><slot>:</gray> <white><value></white><gray><flags>'
   order: ' <gray>Order:</gray> <white><steps>'
+
+tour:
+  usage: '<red>Usage: /syncequip demo tour [start|pause|resume|restart|stop]'
+  started: '<green>Tour started. Sit back and watch, titles explain each stage. Control it with <white>/syncequip demo tour pause|resume|restart|stop</white>.'
+  running: '<red>A tour is already running. Use <white>/syncequip demo tour restart</white> or <white>stop</white>.'
+  no-bots: '<red>The tour needs at least 2 test players whose names start with <prefix>. Start them with start-tour.bat in the bot-test folder.'
+  pause: '<yellow>Tour paused. Sequences already running will finish.'
+  resume: '<green>Tour resumed.'
+  stop: '<yellow>Tour stopped and cleaned up.'
+  nothing: '<yellow>No tour is running, or it is not in that state.'

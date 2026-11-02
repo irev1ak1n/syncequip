@@ -146,3 +146,6 @@ demo:
   distance: 4.0
   # TOWARD_PLAYER: the mobs turn to face you. SAME_AS_PLAYER: they face the way you face.
   facing: TOWARD_PLAYER
+  tour:
+    # The guided tour (/syncequip demo tour) uses online players whose names start with this.
+    bot-prefix: TourBot

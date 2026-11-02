@@ -9,6 +9,7 @@ import dev.syncequip.config.ConfigManager;
 import dev.syncequip.config.SyncEquipSettings;
 import dev.syncequip.demo.DemoListener;
 import dev.syncequip.demo.DemoManager;
+import dev.syncequip.demo.TourManager;
 import dev.syncequip.equipment.EquipmentManager;
 import dev.syncequip.equipment.SequenceService;
 import dev.syncequip.listeners.HotkeyListener;
@@ -40,6 +41,7 @@ public class SyncEquipPlugin extends JavaPlugin {
     private SquadManager squads;
     private SquadSequenceController squadController;
     private DemoManager demo;
+    private TourManager tour;
     private JoinBlockService joinBlocks;
     private SquadStore squadStore;
     private SquadConfigCommands squadConfig;
@@ -72,6 +74,7 @@ public class SyncEquipPlugin extends JavaPlugin {
 
         demo = new DemoManager(this, scheduler, this::settings, new EquipmentSoundManager(), messages, Bukkit::getCurrentTick);
         demo.removeTaggedMobs();
+        tour = new TourManager(this);
 
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
         getServer().getPluginManager().registerEvents(new JoinBlockListener(joinBlocks, squads), this);
@@ -86,6 +89,9 @@ public class SyncEquipPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (tour != null) {
+            tour.shutdown();
+        }
         if (demo != null) {
             demo.shutdown();
         }
@@ -190,6 +196,10 @@ public class SyncEquipPlugin extends JavaPlugin {
 
     public DemoManager demo() {
         return demo;
+    }
+
+    public TourManager tour() {
+        return tour;
     }
 
     public CooldownTracker cooldowns() {
