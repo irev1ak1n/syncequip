@@ -24,12 +24,10 @@ public record SyncEquipSettings(
         int unequipCountdownSeconds,
         Blocks blocks,
         boolean debugLogTicks) {
-
     public SyncEquipSettings {
         order = List.copyOf(order);
     }
 
-    /** Loadout used by solo sequences: the original armor and shield behaviour unless the config says otherwise. */
     public Loadout soloLoadout() {
         return soloUseDefaultLoadout ? defaultLoadout : Loadout.legacy(order);
     }
@@ -55,7 +53,6 @@ public record SyncEquipSettings(
             float unequipPitchMultiplier) {
     }
 
-    /** Joining blocks. {@code allWorlds}: a material applies in every world instead of only the world it was set in. */
     public record Blocks(boolean enabled, int noticeCooldownSeconds, boolean allWorlds) {
     }
 

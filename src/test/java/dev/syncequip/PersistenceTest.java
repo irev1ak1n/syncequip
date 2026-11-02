@@ -19,7 +19,6 @@ import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 /** Squad membership is saved by unique id and is separate from whether a sequence is running. */
 class PersistenceTest extends V11TestBase {
-
     private Block obsidian(int x, int z) {
         Block block = world.getBlockAt(x, 64, z);
         block.setType(Material.OBSIDIAN);

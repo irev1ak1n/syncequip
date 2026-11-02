@@ -8,13 +8,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 public final class InventoryValidator {
-
     private static final int STORAGE_SLOTS = 36;
 
     private InventoryValidator() {
     }
 
-    /** What is in the slot this step fills right now, or {@code null} if it is empty. */
     public static ItemStack current(PlayerInventory inventory, EquipmentStep step) {
         ItemStack item = step == EquipmentStep.MAIN_HAND
                 ? inventory.getItem(inventory.getHeldItemSlot())
@@ -35,14 +33,7 @@ public final class InventoryValidator {
         return validate(player, Loadout.legacy(order), requireEmptySlots, false);
     }
 
-    /**
-     * Checks every slot of the loadout without changing anything.
-     *
-     * @param acceptExisting if true, an item already in the right slot that the loadout accepts counts as done
-     */
     public static Report validate(Player player, Loadout loadout, boolean requireEmptySlots, boolean acceptExisting) {
-        // Runs the same planner as the real sequence, step by step on a private copy, so the check and the
-        // execution cannot disagree about what is available.
         EquipPlanner.Slots model = EquipPlanner.copyOf(player);
         List<EquipmentStep> available = new ArrayList<>();
         List<EquipmentStep> missing = new ArrayList<>();
@@ -70,7 +61,6 @@ public final class InventoryValidator {
 
     public record Report(List<EquipmentStep> available, List<EquipmentStep> missing, List<EquipmentStep> occupied,
                          List<EquipmentStep> satisfied, List<EquipmentStep> skippable, List<EquipmentStep> conflicts) {
-
         public Report {
             available = List.copyOf(available);
             missing = List.copyOf(missing);
@@ -92,15 +82,11 @@ public final class InventoryValidator {
             return available.isEmpty();
         }
 
-        /** True if the player can take part: everything required is ready, or with SKIP at least something is. */
         public boolean acceptableFor(MissingItemPolicy policy) {
             return policy == MissingItemPolicy.ABORT ? allAvailable() : !(available.isEmpty() && satisfied.isEmpty());
         }
     }
 
-    // ------------------------------------------------------------------ taking equipment off
-
-    /** Where an item could go in the player's storage, never the held slot. Returns -1 if there is no room. */
     public static int findRoomSlot(PlayerInventory inventory, ItemStack item) {
         ItemStack[] storage = new ItemStack[STORAGE_SLOTS];
         for (int slot = 0; slot < STORAGE_SLOTS; slot++) {
@@ -125,16 +111,9 @@ public final class InventoryValidator {
         return -1;
     }
 
-    /**
-     * What taking the loadout off would involve for this player.
-     *
-     * @param removable steps whose slot holds an item the loadout accepts
-     * @param enoughRoom whether every one of those items has somewhere to go
-     */
     public record UnequipReport(List<EquipmentStep> removable, boolean enoughRoom) {
     }
 
-    /** Checks, without changing anything, that every item can be returned to storage. */
     public static UnequipReport unequipReport(Player player, Loadout loadout) {
         PlayerInventory inventory = player.getInventory();
         int held = inventory.getHeldItemSlot();

@@ -16,7 +16,6 @@ import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 public abstract class PluginTestBase {
-
     protected static final EquipmentSlot[] SEQUENCE_SLOTS = {EquipmentSlot.FEET, EquipmentSlot.LEGS,
             EquipmentSlot.CHEST, EquipmentSlot.HEAD, EquipmentSlot.OFF_HAND};
 

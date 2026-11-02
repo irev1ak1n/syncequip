@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 class MessagesTest extends PluginTestBase {
-
     @Test
     void keysMissingFromAnOlderMessagesFileFallBackToTheBundledText() throws Exception {
         File file = new File(plugin.getDataFolder(), "messages.yml");

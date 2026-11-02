@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 class SoloSequenceTest extends PluginTestBase {
-
     private Map<EquipmentSlot, Long> recordEquipTicks(PlayerMock player, int ticks) {
         Map<EquipmentSlot, Long> result = new EnumMap<>(EquipmentSlot.class);
         for (int i = 0; i < ticks; i++) {

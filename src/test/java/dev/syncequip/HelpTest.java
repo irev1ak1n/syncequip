@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 class HelpTest extends PluginTestBase {
-
     private PlayerMock op;
     private PlayerMock player;
 

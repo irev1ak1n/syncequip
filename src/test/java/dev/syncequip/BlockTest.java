@@ -25,7 +25,6 @@ import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 /** Joining a squad by stepping onto a block of the squad's material, anywhere in the world. */
 class BlockTest extends V11TestBase {
-
     private Block put(Material material, int x, int y, int z) {
         Block block = world.getBlockAt(x, y, z);
         block.setType(material);

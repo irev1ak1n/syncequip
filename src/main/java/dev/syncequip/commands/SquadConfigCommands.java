@@ -25,19 +25,14 @@ import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-/**
- * The squad subcommands that configure a squad: {@code info}, {@code speed}, {@code pad}, {@code loadout} and
- * {@code disband}. Leaders and administrators change things, members can look.
- */
+/** Squad subcommands that configure a squad; leaders and administrators change things, members can look. */
 public final class SquadConfigCommands {
-
     private static final List<String> SLOTS = List.of("mainhand", "offhand", "helmet", "chestplate", "leggings", "boots");
     private static final List<String> BLOCK_ACTIONS = List.of("set", "remove", "info", "enable", "disable");
     private static final List<String> COMMON_BLOCKS = List.of("here", "obsidian", "crying_obsidian", "gold_block",
             "diamond_block", "emerald_block", "netherite_block", "bedrock", "stone", "quartz_block");
     private static final List<String> LOADOUT_ACTIONS = List.of("show", "reset", "set", "optional", "order");
 
-    /** The squad a command is about: always has a profile, and a live squad if it is currently running. */
     private record Target(SquadProfile profile, Squad live) {
     }
 
@@ -67,15 +62,6 @@ public final class SquadConfigCommands {
         return plugin.squads();
     }
 
-    // ------------------------------------------------------------------ finding the squad a command is about
-
-    /**
-     * Works out which squad to act on, and checks the player is allowed to.
-     *
-     * @param nameArg   an optional squad name, which only administrators may use for squads other than their own
-     * @param configure true if the action changes something, false if looking is enough
-     * @return the target, or {@code null} after telling the player what is wrong
-     */
     private Target resolve(Player player, String nameArg, boolean configure) {
         Optional<Squad> own = squads().squadOf(player.getUniqueId());
         if (nameArg == null || own.map(s -> s.name().equalsIgnoreCase(nameArg)).orElse(false)) {
@@ -101,7 +87,6 @@ public final class SquadConfigCommands {
         return new Target(profile.get(), squads().squadByName(nameArg).orElse(null));
     }
 
-    /** Settings must not change under a running sequence. */
     private boolean busy(Player player, Target target) {
         if (target.live() != null && plugin.sequenceService().scheduler().findBySquad(target.live().id()).isPresent()) {
             messages().send(player, "squad.busy-no-change");
@@ -113,8 +98,6 @@ public final class SquadConfigCommands {
     private SyncEquipSettings settings() {
         return plugin.settings();
     }
-
-    // ------------------------------------------------------------------ info
 
     private void info(Player player, String nameArg) {
         Target target = resolve(player, nameArg, false);
@@ -160,8 +143,6 @@ public final class SquadConfigCommands {
                 + (profile.blockEnabled() ? "" : " (disabled)") + (worldLoaded ? "" : " (world not loaded)");
     }
 
-    // ------------------------------------------------------------------ speed
-
     private void speed(Player player, String[] args) {
         Target target = resolve(player, null, args.length > 2);
         if (target == null) {
@@ -191,8 +172,6 @@ public final class SquadConfigCommands {
         squads().setSpeed(profile, ticks);
         messages().send(player, "speed.set", ph("ticks", ticks), ph("ms", ticks * 50));
     }
-
-    // ------------------------------------------------------------------ pad
 
     private void block(Player player, String[] args) {
         if (args.length < 3) {
@@ -269,8 +248,6 @@ public final class SquadConfigCommands {
             default -> messages().send(player, "block.usage");
         }
     }
-
-    // ------------------------------------------------------------------ loadout
 
     private void loadout(Player player, String[] args) {
         if (args.length < 3) {
@@ -366,8 +343,6 @@ public final class SquadConfigCommands {
         messages().sendPlain(player, "loadout.order", ph("steps", describeSteps(loadout)));
     }
 
-    // ------------------------------------------------------------------ disband
-
     private void disband(Player player, String nameArg) {
         Target target = resolve(player, nameArg, true);
         if (target == null) {
@@ -390,9 +365,6 @@ public final class SquadConfigCommands {
         }
     }
 
-    // ------------------------------------------------------------------ tab completion
-
-    /** Completes everything after {@code squad <sub>}. {@code args} is the full argument array. */
     public List<String> complete(CommandSender sender, String[] args) {
         String sub = args[1].toLowerCase(Locale.ROOT);
         boolean admin = SquadSequenceController.isAdmin(sender);

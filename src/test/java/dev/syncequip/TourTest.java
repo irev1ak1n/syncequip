@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 class TourTest extends V11TestBase {
-
     private PlayerMock viewer;
     private final List<PlayerMock> bots = new ArrayList<>();
 

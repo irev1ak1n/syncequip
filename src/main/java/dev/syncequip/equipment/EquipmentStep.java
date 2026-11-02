@@ -6,10 +6,7 @@ import java.util.Optional;
 import org.bukkit.Material;
 import org.bukkit.inventory.EquipmentSlot;
 
-/**
- * One beat of a sequence: which slot changes. {@link #SHIELD} is the offhand step. Its name is kept for
- * older configs, but the loadout decides which item the offhand needs (shield, totem and so on).
- */
+/** One beat of a sequence. {@link #SHIELD} is the offhand step; the name is kept for older configs. */
 public enum EquipmentStep {
     BOOTS(EquipmentSlot.FEET, "Boots", "boots", 0.1),
     LEGGINGS(EquipmentSlot.LEGS, "Leggings", "leggings", 0.7),
@@ -18,7 +15,6 @@ public enum EquipmentStep {
     SHIELD(EquipmentSlot.OFF_HAND, "Shield", "offhand", 1.0),
     MAIN_HAND(EquipmentSlot.HAND, "Main hand", "mainhand", 1.0);
 
-    /** Every step in the familiar order, with the main hand last. */
     public static final List<EquipmentStep> CANONICAL = List.of(BOOTS, LEGGINGS, CHESTPLATE, HELMET, SHIELD, MAIN_HAND);
 
     private final EquipmentSlot slot;
@@ -41,7 +37,6 @@ public enum EquipmentStep {
         return displayName;
     }
 
-    /** The word used for this slot in commands and in the loadout section of config files. */
     public String configKey() {
         return configKey;
     }
@@ -50,12 +45,10 @@ public enum EquipmentStep {
         return bodyHeight;
     }
 
-    /** Main hand and offhand take any item, armor slots only take their own kind of armor. */
     public boolean isHand() {
         return this == MAIN_HAND || this == SHIELD;
     }
 
-    /** The default idea of what belongs in this slot, used when a loadout says "any". */
     public boolean matches(Material material) {
         if (material == null || material.isAir()) {
             return false;

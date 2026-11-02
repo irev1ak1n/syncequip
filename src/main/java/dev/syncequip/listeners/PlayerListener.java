@@ -20,7 +20,6 @@ import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 
 public final class PlayerListener implements Listener {
-
     private final SyncEquipPlugin plugin;
 
     public PlayerListener(SyncEquipPlugin plugin) {
@@ -45,7 +44,6 @@ public final class PlayerListener implements Listener {
         plugin.sequenceService().scheduler().removeParticipant(event.getPlayer().getUniqueId(),
                 RemovalReason.CHANGED_WORLD);
     }
-
 
     private boolean locked(Player player) {
         return plugin.sequenceService().isLocked(player.getUniqueId());
@@ -80,7 +78,6 @@ public final class PlayerListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.LOW)
-    // Blocks right click armor equipping so it cannot race the sequence for the same equipment slot.
     public void onInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;

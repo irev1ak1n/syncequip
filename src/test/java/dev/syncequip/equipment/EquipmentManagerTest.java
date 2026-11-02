@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 class EquipmentManagerTest extends PluginTestBase {
-
     private final EquipmentManager manager = new EquipmentManager();
 
     @Test

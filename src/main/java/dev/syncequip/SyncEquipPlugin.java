@@ -33,7 +33,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 public class SyncEquipPlugin extends JavaPlugin {
-
     private ConfigManager configManager;
     private MessageUtil messages;
     private TickSequenceScheduler scheduler;
@@ -84,7 +83,6 @@ public class SyncEquipPlugin extends JavaPlugin {
         registerCommand("syncequip", "Synchronized armor equipping", List.of("se", "sequip"),
                 new SyncEquipCommand(this));
 
-        // This is the only timer in the plugin. Every sequence on the server advances from this one task.
         tickTask = getServer().getScheduler().runTaskTimer(this, () -> scheduler.tick(Bukkit.getCurrentTick()), 1L, 1L);
     }
 
@@ -97,7 +95,6 @@ public class SyncEquipPlugin extends JavaPlugin {
             demo.shutdown();
         }
         if (scheduler != null) {
-            // Each step is an atomic move, so stopping here always leaves every inventory in a valid state.
             scheduler.cancelAll(FinishReason.SHUTDOWN);
         }
         if (tickTask != null) {
@@ -110,7 +107,6 @@ public class SyncEquipPlugin extends JavaPlugin {
         }
     }
 
-    /** Saves squad settings soon. Many changes in a row (a leader tuning a loadout) become one write. */
     private void markSquadsDirty() {
         if (saveScheduled || !isEnabled()) {
             return;
@@ -122,7 +118,6 @@ public class SyncEquipPlugin extends JavaPlugin {
         }, 20L);
     }
 
-    /** Writes squads.yml. The text is built on the main thread, the file write can happen off it. */
     public void flushSquads(boolean wait) {
         String contents = squadStore.serialize(squads.profiles());
         if (!squadStore.exists() && squads.profiles().stream().noneMatch(p -> p.persistable())) {

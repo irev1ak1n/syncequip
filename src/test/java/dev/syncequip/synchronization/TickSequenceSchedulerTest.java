@@ -18,7 +18,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TickSequenceSchedulerTest {
-
     private TickSequenceScheduler scheduler;
     private RecordingCallbacks callbacks;
 

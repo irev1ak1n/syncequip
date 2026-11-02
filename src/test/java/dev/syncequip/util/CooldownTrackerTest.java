@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
 class CooldownTrackerTest {
-
     private final AtomicLong clock = new AtomicLong(0);
     private final CooldownTracker cooldowns = new CooldownTracker(clock::get);
     private final UUID player = UUID.randomUUID();

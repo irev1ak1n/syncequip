@@ -20,7 +20,6 @@ import org.mockbukkit.mockbukkit.entity.PlayerMock;
  * The first group is the reported bug: an armor piece held in a hand was reported as missing.
  */
 class ReliabilityTest extends V11TestBase {
-
     private PlayerInventory bare(PlayerMock p) {
         PlayerInventory inv = p.getInventory();
         inv.clear();

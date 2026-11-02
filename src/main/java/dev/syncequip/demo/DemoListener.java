@@ -9,9 +9,7 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.world.EntitiesLoadEvent;
 
-/** Keeps demo husks harmless and cleans up any that were left behind by a crash or reload. */
 public final class DemoListener implements Listener {
-
     private final DemoManager demo;
 
     public DemoListener(DemoManager demo) {

@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class SyncSequence {
-
     public enum Mode {
         SOLO,
         SQUAD,
@@ -69,7 +68,6 @@ public final class SyncSequence {
         if (now < due) {
             return false;
         }
-        // If the server runs late, the due event runs at once and later events shift by the same delay. Spacing between steps stays the same.
         drift += now - due;
 
         long offset = next.offset();

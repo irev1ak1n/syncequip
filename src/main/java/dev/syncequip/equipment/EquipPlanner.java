@@ -15,7 +15,6 @@ import org.bukkit.inventory.PlayerInventory;
  * 39 boots, leggings, chestplate and helmet, 40 the offhand.
  */
 public final class EquipPlanner {
-
     static final int STORAGE = 36;
     static final int OFFHAND = 40;
     private static final EquipmentSlot[] ARMOR = {EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST,
@@ -24,22 +23,16 @@ public final class EquipPlanner {
     private EquipPlanner() {
     }
 
-    /** Read and write access to the 41 slots of one player, real or simulated. */
     public interface Slots {
-
         int held();
 
-        /** The item in a slot, or {@code null} if it is empty. */
         ItemStack get(int index);
 
-        /** Puts an item in a slot ({@code null} empties it). {@code silent} hides the vanilla equip sound. */
         void set(int index, ItemStack item, boolean silent);
 
-        /** Changes the selected hotbar slot. */
         void select(int hotbarSlot);
     }
 
-    /** The slots of a real player. */
     public static Slots live(Player player) {
         PlayerInventory inventory = player.getInventory();
         return new Slots() {
@@ -70,7 +63,6 @@ public final class EquipPlanner {
         };
     }
 
-    /** A private copy that can be changed freely to try out a plan. */
     public static Slots copyOf(Player player) {
         Slots real = live(player);
         ItemStack[] items = new ItemStack[OFFHAND + 1];
@@ -106,7 +98,6 @@ public final class EquipPlanner {
         return index == OFFHAND ? EquipmentSlot.OFF_HAND : ARMOR[index - STORAGE];
     }
 
-    /** Where the item for this step ends up: an armor or offhand slot, or the selected hotbar slot. */
     public static int destination(EquipmentStep step, int held) {
         return switch (step) {
             case BOOTS -> 36;
@@ -119,35 +110,19 @@ public final class EquipPlanner {
     }
 
     public enum Status {
-        /** The slot already holds an item the loadout accepts. */
         ALREADY,
-        /** The slot holds something else and the settings say not to touch it, or the old item has nowhere to go. */
         OCCUPIED,
-        /** No item that fits exists anywhere the player carries items. */
         MISSING,
-        /** A fitting item exists, but another slot of the loadout is already using it. */
         CONFLICT,
         MOVE
     }
 
-    /**
-     * @param from         slot the item comes from
-     * @param destination  slot it goes to
-     * @param displacedTo  where the item that was in the way goes, or -1 if the destination was empty. When
-     *                     {@code from} equals {@code destination} the item is already on the hotbar and is selected.
-     */
     public record Move(int from, int destination, int displacedTo) {
     }
 
     public record Decision(Status status, Move move) {
     }
 
-    /**
-     * Works out what to do for one step.
-     *
-     * @param loadout        the whole loadout, so items another slot already uses are left alone; may be {@code null}
-     * @param acceptExisting whether an item already in place counts (and is therefore kept for its own slot)
-     */
     public static Decision plan(Slots slots, Loadout loadout, EquipmentStep step, SlotRequirement requirement,
                                 boolean requireEmpty, boolean acceptExisting) {
         int held = slots.held();
@@ -160,7 +135,6 @@ public final class EquipPlanner {
             return new Decision(Status.OCCUPIED, null);
         }
 
-        // Quietest sources first: ordinary slots, then the selected one, then the offhand.
         int from = -1;
         boolean reservedHit = false;
         for (int index : searchOrder(held)) {
@@ -182,7 +156,6 @@ public final class EquipPlanner {
             return new Decision(reservedHit ? Status.CONFLICT : Status.MISSING, null);
         }
 
-        // A weapon already on the hotbar is switched to, so no item has to move at all.
         if (step.isHand() && step == EquipmentStep.MAIN_HAND && from < 9) {
             return new Decision(Status.MOVE, new Move(from, from, -1));
         }
@@ -213,7 +186,6 @@ public final class EquipPlanner {
         return order;
     }
 
-    /** An item that another enabled slot of the loadout already accepts where it is stays with that slot. */
     private static boolean reservedByAnotherSlot(Slots slots, Loadout loadout, boolean acceptExisting,
                                                  EquipmentStep step, int index, ItemStack item) {
         if (loadout == null || !acceptExisting) {
@@ -237,12 +209,6 @@ public final class EquipPlanner {
         return -1;
     }
 
-    /**
-     * Carries out a planned move. Armor moves one item out of its stack. Hand items move as a whole stack and swap
-     * with what was there, so nothing is created, lost or overwritten.
-     *
-     * @return the item now in the destination slot
-     */
     public static ItemStack apply(Slots slots, EquipmentStep step, Move move, boolean silent) {
         ItemStack source = slots.get(move.from());
         if (move.from() == move.destination()) {

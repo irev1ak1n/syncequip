@@ -20,12 +20,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 
-/**
- * The behaviour behind joining blocks. A squad is given a block material, and anyone who steps onto a block of
- * that material in the squad's world joins it, wherever the block is and whenever it was placed.
- */
 public final class JoinBlockService {
-
     public static final String PERMISSION_JOIN = "syncequip.squad";
 
     public enum SetResult {
@@ -34,9 +29,7 @@ public final class JoinBlockService {
         CONFLICT
     }
 
-    /** A material read from a command, or the reason it cannot be used. */
     public record ParsedMaterial(Material material, String error) {
-
         public boolean ok() {
             return material != null;
         }
@@ -47,7 +40,6 @@ public final class JoinBlockService {
     private final MessageUtil messages;
     private final Supplier<SyncEquipSettings> settings;
     private final LongSupplier clock;
-    /** When each player last heard a problem about a joining block, so standing on one never fills the chat. */
     private final Map<UUID, Long> lastNotice = new HashMap<>();
     private final Map<UUID, Long> lastLeaderBar = new HashMap<>();
 
@@ -64,9 +56,6 @@ public final class JoinBlockService {
         return settings.get().blocks().allWorlds();
     }
 
-    // ------------------------------------------------------------------ stepping onto a block
-
-    /** Called when a player steps onto a block whose material belongs to a squad. */
     public void onStep(Player player, SquadProfile profile) {
         SyncEquipSettings.Blocks blocks = settings.get().blocks();
         if (!blocks.enabled() || !profile.blockEnabled()) {
@@ -131,18 +120,12 @@ public final class JoinBlockService {
         lastLeaderBar.remove(player);
     }
 
-    /** The material of the block a player at this location is standing on. */
     public static Material supportMaterial(Location at) {
         int y = at.getBlockY();
-        // Feet exactly on a block top means the block below. Feet inside a slab or carpet means that block.
         int supportY = at.getY() - y < 1.0E-4 ? y - 1 : y;
         return at.getWorld().getBlockAt(at.getBlockX(), supportY, at.getBlockZ()).getType();
     }
 
-    /**
-     * Adds the players who are already standing on the squad's joining block, who would otherwise have to step off
-     * and on again. The player who made the change is left out.
-     */
     public void sweep(SquadProfile profile, Player except) {
         Material material = profile.blockMaterial();
         if (material == null || !profile.blockEnabled()) {
@@ -160,15 +143,11 @@ public final class JoinBlockService {
         }
     }
 
-    // ------------------------------------------------------------------ choosing the material
-
-    /** The block directly under the player's feet: a slab they stand on, or the block below an open space. */
     public static Block blockUnder(Location location) {
         Block feet = location.getBlock();
         return feet.getType().isSolid() ? feet : feet.getRelative(BlockFace.DOWN);
     }
 
-    /** Reads a block name such as {@code obsidian} or {@code minecraft:crying_obsidian}. */
     public static ParsedMaterial parseMaterial(String word) {
         String name = word.trim().toLowerCase(Locale.ROOT);
         if (name.startsWith("minecraft:")) {
@@ -188,11 +167,6 @@ public final class JoinBlockService {
         return material.name().toLowerCase(Locale.ROOT);
     }
 
-    /**
-     * Gives the squad a joining block material in the actor's world.
-     *
-     * @param material the material, or {@code null} to use the block under the actor's feet
-     */
     public SetResult set(Player actor, SquadProfile profile, Material material) {
         Material chosen = material != null ? material : blockUnder(actor.getLocation()).getType();
         if (!chosen.isSolid() || !chosen.isBlock()) {
@@ -203,7 +177,6 @@ public final class JoinBlockService {
         return status == SquadManager.Status.OK ? SetResult.OK : SetResult.CONFLICT;
     }
 
-    /** Re-reads which saved assignments belong to loaded worlds. Call after worlds load. */
     public void reindex() {
         squads.reindexBlocks(profile -> {
             World world = profile.blockWorldId() != null ? server.getWorld(profile.blockWorldId()) : null;

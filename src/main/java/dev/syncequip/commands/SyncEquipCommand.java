@@ -30,7 +30,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public final class SyncEquipCommand implements BasicCommand {
-
     public static final String PERMISSION_USE = "syncequip.use";
     public static final String PERMISSION_SQUAD = "syncequip.squad";
     public static final String PERMISSION_RELOAD = "syncequip.reload";
@@ -76,7 +75,6 @@ public final class SyncEquipCommand implements BasicCommand {
             default -> messages.send(sender, "command.unknown", ph("input", args[0]));
         }
     }
-
 
     private void soloUnequip(CommandSender sender) {
         Player player = requirePlayer(sender);
@@ -134,7 +132,6 @@ public final class SyncEquipCommand implements BasicCommand {
             }
         }
     }
-
 
     private void demo(CommandSender sender, String[] args) {
         if (!requirePermission(sender, PERMISSION_DEMO)) {
@@ -339,7 +336,6 @@ public final class SyncEquipCommand implements BasicCommand {
         }
     }
 
-    /** Joins by squad name or by the name of the player who leads it. Needs an invite. */
     private void squadJoin(Player player, String[] args) {
         MessageUtil messages = plugin.messages();
         if (args.length < 3) {
@@ -421,11 +417,9 @@ public final class SyncEquipCommand implements BasicCommand {
         }
     }
 
-
     private static final List<String> HELP_PAGES = List.of("basics", "squads", "sequences", "blocks", "loadout", "demo",
             "admin");
 
-    /** The help pages this sender may use, in order. Pages about commands they cannot run are left out. */
     private List<String> helpPages(CommandSender sender) {
         List<String> pages = new ArrayList<>();
         for (String id : HELP_PAGES) {
@@ -459,7 +453,6 @@ public final class SyncEquipCommand implements BasicCommand {
         return -1;
     }
 
-    /** One page per topic, so each fits in the chat window. {@code page} is a number or a topic name. */
     private void sendHelp(CommandSender sender, String page) {
         MessageUtil messages = plugin.messages();
         List<String> pages = helpPages(sender);

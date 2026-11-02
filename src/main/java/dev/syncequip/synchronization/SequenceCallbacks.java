@@ -4,7 +4,6 @@ import dev.syncequip.equipment.EquipmentStep;
 import java.util.UUID;
 
 public interface SequenceCallbacks {
-
     default void onCountdown(SyncSequence sequence, int secondsRemaining, long tick) {
     }
 

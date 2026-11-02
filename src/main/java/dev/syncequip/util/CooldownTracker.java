@@ -6,7 +6,6 @@ import java.util.UUID;
 import java.util.function.LongSupplier;
 
 public final class CooldownTracker {
-
     private final LongSupplier clock;
     private final Map<UUID, Long> readyAt = new HashMap<>();
 

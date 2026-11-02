@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 class SquadSequenceTest extends PluginTestBase {
-
     private List<PlayerMock> formSquad(int size) {
         List<PlayerMock> squad = new ArrayList<>();
         PlayerMock leader = playerWithKit("Leader");

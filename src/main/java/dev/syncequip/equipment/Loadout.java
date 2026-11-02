@@ -8,12 +8,7 @@ import java.util.Objects;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 
-/**
- * Which real inventory items a player must have for each slot, and the order the slots are filled.
- * Immutable. Slots set to {@code none} take no part in validation, sequencing or sounds.
- */
 public final class Loadout {
-
     private final Map<EquipmentStep, SlotRequirement> requirements;
     private final List<EquipmentStep> order;
 
@@ -22,7 +17,6 @@ public final class Loadout {
         this.order = List.copyOf(order);
     }
 
-    /** Sword, shield and the four armor pieces, with the main hand last. */
     public static Loadout standard() {
         Map<EquipmentStep, SlotRequirement> map = new EnumMap<>(EquipmentStep.class);
         for (EquipmentStep step : EquipmentStep.CANONICAL) {
@@ -33,10 +27,6 @@ public final class Loadout {
         return new Loadout(map, EquipmentStep.CANONICAL);
     }
 
-    /**
-     * The original behaviour: only the listed steps take part, armor and shield only, in the given order.
-     * Used for solo sequences and for older configs.
-     */
     public static Loadout legacy(List<EquipmentStep> steps) {
         Map<EquipmentStep, SlotRequirement> map = new EnumMap<>(EquipmentStep.class);
         for (EquipmentStep step : EquipmentStep.CANONICAL) {
@@ -62,7 +52,6 @@ public final class Loadout {
         return new Loadout(map, order);
     }
 
-    /** Puts the listed steps first, in the given order, and every other step after them. */
     public Loadout withOrder(List<EquipmentStep> preferred) {
         List<EquipmentStep> merged = new ArrayList<>();
         for (EquipmentStep step : preferred) {
@@ -82,12 +71,10 @@ public final class Loadout {
         return order;
     }
 
-    /** Steps that take part, in sequence order. */
     public List<EquipmentStep> steps() {
         return order.stream().filter(step -> requirements.get(step).enabled()).toList();
     }
 
-    /** The same steps in reverse, for taking equipment off. */
     public List<EquipmentStep> unequipSteps() {
         List<EquipmentStep> steps = new ArrayList<>(steps());
         java.util.Collections.reverse(steps);
@@ -102,7 +89,6 @@ public final class Loadout {
         return String.join(", ", steps.stream().map(this::label).toList());
     }
 
-    /** Writes this loadout into a config section using the same words the commands use. */
     public void save(ConfigurationSection section) {
         List<String> optional = new ArrayList<>();
         for (EquipmentStep step : EquipmentStep.CANONICAL) {
@@ -116,10 +102,6 @@ public final class Loadout {
         section.set("order", order.stream().map(step -> step.name().toLowerCase(java.util.Locale.ROOT)).toList());
     }
 
-    /**
-     * Reads a loadout section on top of {@code base}. Words that cannot be read are ignored and reported in
-     * {@code warnings}, so a typo never leaves a player without a working loadout.
-     */
     public static Loadout load(ConfigurationSection section, Loadout base, String path, List<String> warnings) {
         if (section == null) {
             return base;

@@ -16,7 +16,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
 class ConfigManagerTest {
-
     private static SyncEquipSettings parse(String yaml, List<String> warnings) throws InvalidConfigurationException {
         YamlConfiguration config = new YamlConfiguration();
         config.loadFromString(yaml);

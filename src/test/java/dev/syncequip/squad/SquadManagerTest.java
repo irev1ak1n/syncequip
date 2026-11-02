@@ -13,7 +13,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class SquadManagerTest {
-
     private final AtomicLong clock = new AtomicLong(1_000_000);
     private SquadManager squads;
     private final UUID leader = UUID.randomUUID();

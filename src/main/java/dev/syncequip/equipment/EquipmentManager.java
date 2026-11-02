@@ -6,20 +6,16 @@ import org.bukkit.inventory.PlayerInventory;
 
 /** Each call is one atomic move on the main thread. The same item stack is moved, so nothing is copied or lost. */
 public final class EquipmentManager {
-
     public enum Status {
         EQUIPPED,
-        /** The slot already held an item the loadout accepts, so nothing had to move. */
         ALREADY,
         MISSING,
         OCCUPIED,
-        /** A fitting item exists but another slot of the loadout is using it. */
         CONFLICT,
         INVALID_PLAYER
     }
 
     public record Result(Status status, ItemStack item) {
-
         public boolean equipped() {
             return status == Status.EQUIPPED;
         }
@@ -33,7 +29,6 @@ public final class EquipmentManager {
     }
 
     public record UnequipResult(UnequipStatus status, ItemStack item) {
-
         public boolean removed() {
             return status == UnequipStatus.REMOVED;
         }
@@ -48,7 +43,6 @@ public final class EquipmentManager {
         return equip(player, step, requirement, null, requireEmptySlot, silent, acceptExisting);
     }
 
-    /** @param loadout the whole loadout, so an item another slot is using is not taken; may be {@code null} */
     public Result equip(Player player, EquipmentStep step, SlotRequirement requirement, Loadout loadout,
                         boolean requireEmptySlot, boolean silent, boolean acceptExisting) {
         if (!InventoryValidator.canEquip(player)) {
@@ -66,10 +60,6 @@ public final class EquipmentManager {
         };
     }
 
-    /**
-     * Moves the item in this slot back into the inventory, if the requirement accepts it. The item goes to a free
-     * storage slot (or joins a stack), never the held slot and never onto the ground.
-     */
     public UnequipResult unequip(Player player, EquipmentStep step, SlotRequirement requirement, boolean silent) {
         if (!InventoryValidator.canEquip(player)) {
             return new UnequipResult(UnequipStatus.INVALID_PLAYER, null);

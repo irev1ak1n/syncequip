@@ -19,7 +19,6 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 
 /** Pure loadout logic: reading words, ordering, saving and loading. Needs Material data only. */
 class LoadoutTest {
-
     @org.junit.jupiter.api.BeforeAll
     static void mock() {
         MockBukkit.mock();

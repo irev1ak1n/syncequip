@@ -17,13 +17,8 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.regex.Pattern;
 
-/**
- * Squad membership and the saved settings of each squad, including joining blocks. Plain Java with no Bukkit
- * dependency. Members live in memory only. Settings that matter later (speed, loadout, joining block) are kept in
- * {@link SquadProfile}s, and {@link #setChangeListener} lets the plugin save them when they change.
- */
+/** Squad membership and settings. Plain Java with no Bukkit dependency. */
 public final class SquadManager {
-
     public enum Status {
         OK,
         ALREADY_IN_SQUAD,
@@ -45,7 +40,6 @@ public final class SquadManager {
     public record LeaveResult(Status status, Squad squad, UUID newLeader, boolean disbanded) {
     }
 
-    /** Letters, digits, underscore and hyphen, 2 to 24 characters. */
     public static final Pattern NAME_PATTERN = Pattern.compile("[A-Za-z0-9_-]{2,24}");
 
     private final LongSupplier clock;
@@ -53,9 +47,7 @@ public final class SquadManager {
     private final Map<UUID, Squad> byId = new HashMap<>();
     private final Map<String, Squad> byName = new HashMap<>();
     private final Map<String, SquadProfile> profiles = new LinkedHashMap<>();
-    /** World id to block material to squad. Only worlds that have a joining block appear here. */
     private final Map<UUID, Map<Material, SquadProfile>> blockIndex = new HashMap<>();
-    /** Material to squad for the all-worlds setting. A world specific assignment always wins over this. */
     private final Map<Material, SquadProfile> anyWorld = new EnumMap<>(Material.class);
     private final Map<String, UUID> indexedWorld = new HashMap<>();
     private Runnable changeListener = () -> { };
@@ -72,16 +64,10 @@ public final class SquadManager {
         changeListener.run();
     }
 
-    // ------------------------------------------------------------------ squads
-
     public Status create(UUID leader) {
         return create(leader, "squad-" + leader.toString().substring(0, 8), false);
     }
 
-    /**
-     * Creates a live squad. If a saved squad with the same name exists, its settings come back with it, but only
-     * for its owner (or when {@code admin} is true).
-     */
     public Status create(UUID leader, String name, boolean admin) {
         if (byPlayer.containsKey(leader)) {
             return Status.ALREADY_IN_SQUAD;
@@ -112,10 +98,6 @@ public final class SquadManager {
         return Status.OK;
     }
 
-    /**
-     * Brings back the squads that were saved with members. A player already placed in an earlier squad is never moved,
-     * so a file that lists someone twice keeps the first squad.
-     */
     public void restoreSquads(List<String> warnings) {
         for (SquadProfile profile : profiles.values()) {
             Set<UUID> saved = profile.memberSet();
@@ -178,7 +160,6 @@ public final class SquadManager {
         return joinInvited(player, squad, maxSize);
     }
 
-    /** Joins a squad the player has an invite for. */
     public Status joinInvited(UUID player, Squad squad, int maxSize) {
         if (byPlayer.containsKey(player)) {
             return Status.ALREADY_IN_SQUAD;
@@ -222,7 +203,6 @@ public final class SquadManager {
             }
             return new LeaveResult(Status.OK, squad, null, true);
         }
-        // A leaving leader hands leadership to the member who has been in the squad the longest.
         UUID newLeader = null;
         if (wasLeader) {
             newLeader = squad.members().iterator().next();
@@ -251,7 +231,6 @@ public final class SquadManager {
         return Status.OK;
     }
 
-    /** Ends a squad for good: members are released and its saved settings and joining block are deleted. */
     public List<UUID> disband(String name) {
         String key = SquadProfile.key(name);
         List<UUID> released = new ArrayList<>();
@@ -292,15 +271,12 @@ public final class SquadManager {
         return Collections.unmodifiableCollection(byId.values());
     }
 
-    /** Forgets every live squad. Saved settings stay, so squads can be brought back by name. */
     public void clear() {
         byPlayer.clear();
         byId.clear();
         byName.clear();
         profiles.values().removeIf(p -> !p.persistable());
     }
-
-    // ------------------------------------------------------------------ saved settings
 
     public Optional<SquadProfile> profile(String name) {
         return name == null ? Optional.empty() : Optional.ofNullable(profiles.get(SquadProfile.key(name)));
@@ -310,7 +286,6 @@ public final class SquadManager {
         return Collections.unmodifiableCollection(profiles.values());
     }
 
-    /** Replaces the saved settings with what was read from disk. Call before any squad exists. */
     public void loadProfiles(Collection<SquadProfile> loaded) {
         profiles.clear();
         blockIndex.clear();
@@ -330,12 +305,6 @@ public final class SquadManager {
         changed();
     }
 
-    // ------------------------------------------------------------------ joining blocks
-
-    /**
-     * Gives a squad its joining block material in a world, replacing the one it had. Fails if another squad already
-     * uses that material in the same world.
-     */
     public Status setBlock(SquadProfile profile, Material material, String worldName, UUID worldId) {
         SquadProfile holder = blockIndex.getOrDefault(worldId, Map.of()).get(material);
         if (holder != null && holder != profile) {
@@ -368,13 +337,11 @@ public final class SquadManager {
         changed();
     }
 
-    /** Forgets the note about an old coordinate based joining block once the leader has been told. */
     public void clearLegacyPad(SquadProfile profile) {
         profile.setLegacyPad(null);
         changed();
     }
 
-    /** The squad whose joining block this is, looking at this world first and then, if allowed, every world. */
     public Optional<SquadProfile> blockFor(UUID worldId, Material material, boolean allWorlds) {
         Map<Material, SquadProfile> world = blockIndex.get(worldId);
         SquadProfile hit = world == null ? null : world.get(material);
@@ -384,15 +351,10 @@ public final class SquadManager {
         return Optional.ofNullable(hit);
     }
 
-    /** Cheap test used before reading a block while a player walks. */
     public boolean hasBlocks(UUID worldId, boolean allWorlds) {
         return blockIndex.containsKey(worldId) || (allWorlds && !anyWorld.isEmpty());
     }
 
-    /**
-     * Rebuilds the lookup from the saved assignments. The resolver gives the id of the world a squad's block belongs
-     * to, or {@code null} if that world is not loaded.
-     */
     public void reindexBlocks(Function<SquadProfile, UUID> resolver) {
         blockIndex.clear();
         indexedWorld.clear();

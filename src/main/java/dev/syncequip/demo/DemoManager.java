@@ -45,16 +45,8 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
-/**
- * Demo mode: a row of stationary husks that are equipped on the shared tick scheduler, so the
- * sequence can be watched without other players. The husks wear temporary netherite gear that
- * never touches a player inventory and never drops.
- *
- * <p>Timing comes from the same {@link TickSequenceScheduler} as solo and squad sequences. Only the
- * pause between repeated runs uses an ordinary delayed task.
- */
+/** A row of husks equipped on the shared tick scheduler, so the sequence can be watched alone. */
 public final class DemoManager implements SequenceCallbacks {
-
     public static final int MAX_REPEATS = 100;
 
     private static final Map<EquipmentStep, Material> GEAR = new EnumMap<>(EquipmentStep.class);
@@ -68,7 +60,6 @@ public final class DemoManager implements SequenceCallbacks {
         GEAR.put(EquipmentStep.MAIN_HAND, Material.NETHERITE_SWORD);
     }
 
-    /** Creates one husk. Replaceable so tests can run without a real server. */
     @FunctionalInterface
     public interface MobSpawner {
         Husk spawn(Location at, Consumer<Husk> init);
@@ -114,13 +105,10 @@ public final class DemoManager implements SequenceCallbacks {
         this.tagKey = new NamespacedKey(plugin, "demo");
     }
 
-    // ------------------------------------------------------------------ mobs
-
     public boolean isDemoMob(Entity entity) {
         return entity.getPersistentDataContainer().has(tagKey, PersistentDataType.BYTE);
     }
 
-    /** Spawns a row of {@code count} husks in front of the player, replacing any earlier row. */
     public int spawn(Player player, int count) {
         clear();
         SyncEquipSettings.Demo demo = settings.get().demo();
@@ -145,7 +133,6 @@ public final class DemoManager implements SequenceCallbacks {
                 continue;
             }
             husk.getPassengers().forEach(Entity::remove);
-            // Spawning can hand out random gear, so make sure every slot really starts empty.
             clearEquipment(husk);
             mobs.add(husk.getUniqueId());
             labels.put(husk.getUniqueId(), mobs.size());
@@ -157,7 +144,6 @@ public final class DemoManager implements SequenceCallbacks {
         this.spawner = spawner;
     }
 
-    /** Spawns without randomised data, so no random gear, baby variant or chicken rider is applied. */
     private static Husk spawnWithPaper(Location at, Consumer<Husk> init) {
         return at.getWorld().spawn(at, Husk.class, CreatureSpawnEvent.SpawnReason.CUSTOM, false, init);
     }
@@ -201,7 +187,6 @@ public final class DemoManager implements SequenceCallbacks {
         equipment.setItemInMainHand(null, true);
     }
 
-    /** Live demo husks, in spawn order. Mobs that no longer exist are dropped from the list. */
     public List<Husk> liveMobs() {
         List<Husk> live = new ArrayList<>();
         mobs.removeIf(id -> {
@@ -224,13 +209,10 @@ public final class DemoManager implements SequenceCallbacks {
         return liveMobs().size();
     }
 
-    // ------------------------------------------------------------------ running
-
     public int interval() {
         return intervalOverride != null ? intervalOverride : settings.get().demo().intervalTicks();
     }
 
-    /** Sets the interval used by later runs. Does not change a run that is already going. */
     public void setInterval(int ticks) {
         if (ticks < SequenceTimeline.MIN_INTERVAL || ticks > SequenceTimeline.MAX_INTERVAL) {
             throw new IllegalArgumentException("interval must be between 1 and 10");
@@ -283,7 +265,6 @@ public final class DemoManager implements SequenceCallbacks {
         }
     }
 
-    /** Stops a running demo. Pieces already on the mobs stay on. */
     public boolean stop() {
         boolean was = isRunning();
         runsTotal = 0;
@@ -298,7 +279,6 @@ public final class DemoManager implements SequenceCallbacks {
         return was;
     }
 
-    /** Removes all equipment from the demo mobs so the sequence can be replayed. */
     public int reset() {
         stop();
         List<Husk> live = liveMobs();
@@ -312,7 +292,6 @@ public final class DemoManager implements SequenceCallbacks {
         }
     }
 
-    /** Removes every demo mob, including leftovers from earlier sessions. Returns how many went. */
     public int clear() {
         stop();
         Set<UUID> removed = new HashSet<>();
@@ -329,7 +308,6 @@ public final class DemoManager implements SequenceCallbacks {
         return removed.size();
     }
 
-    /** Removes tagged husks that this manager does not track, e.g. after a reload or crash. */
     public Set<UUID> removeTaggedMobs() {
         Set<UUID> removed = new HashSet<>();
         for (World world : server.getWorlds()) {
@@ -346,8 +324,6 @@ public final class DemoManager implements SequenceCallbacks {
     public void shutdown() {
         clear();
     }
-
-    // ------------------------------------------------------------------ callbacks
 
     private Player ownerPlayer() {
         return owner == null ? null : server.getPlayer(owner);

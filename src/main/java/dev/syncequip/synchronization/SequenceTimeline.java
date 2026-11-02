@@ -4,9 +4,7 @@ import dev.syncequip.equipment.EquipmentStep;
 import java.util.ArrayList;
 import java.util.List;
 
-/** All timing is in server ticks. Countdown beats come first, then one step per interval, then a finish event. */
 public final class SequenceTimeline {
-
     public static final int TICKS_PER_SECOND = 20;
     public static final int MIN_INTERVAL = 1;
     public static final int MAX_INTERVAL = 10;

@@ -7,13 +7,8 @@ import java.util.Set;
 import java.util.UUID;
 import org.bukkit.Material;
 
-/**
- * The settings a squad keeps: its name, who owns it, its own speed and loadout, and its joining block. Unlike the
- * list of members, this survives the squad being empty and a server restart. A {@code null} speed or loadout means
- * "use the global default from config.yml".
- */
+/** A squad's persistent settings. A {@code null} speed or loadout means the config.yml default. */
 public final class SquadProfile {
-
     private final String name;
     private UUID owner;
     private final Set<UUID> members = new LinkedHashSet<>();
@@ -42,7 +37,6 @@ public final class SquadProfile {
         return key(name);
     }
 
-    /** The player who last led this squad. Only this player (or an admin) can bring the saved squad back. */
     public UUID owner() {
         return owner;
     }
@@ -55,7 +49,6 @@ public final class SquadProfile {
         return loadout;
     }
 
-    /** The block material whose blocks add players to this squad, or {@code null} for none. */
     public Material blockMaterial() {
         return blockMaterial;
     }
@@ -72,20 +65,14 @@ public final class SquadProfile {
         return blockEnabled;
     }
 
-    /**
-     * A description of an old coordinate based joining block found in a saved file. It is never used to add anyone to
-     * a squad. It is only kept so the leader can be told once that it was retired.
-     */
     public String legacyPad() {
         return legacyPad;
     }
 
-    /** Whether there is anything worth saving to disk. A plain squad with no overrides is not saved. */
     public boolean persistable() {
         return speed != null || loadout != null || blockMaterial != null || legacyPad != null || !members.isEmpty();
     }
 
-    /** The members of the live squad, in the order they joined. The squad and the saved file share this one set. */
     Set<UUID> memberSet() {
         return members;
     }

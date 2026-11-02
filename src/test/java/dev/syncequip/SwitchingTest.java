@@ -18,7 +18,6 @@ import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 /** Players switch to what the loadout needs instead of being refused because something else is in the way. */
 class SwitchingTest extends V11TestBase {
-
     private PlayerInventory cleared(PlayerMock p) {
         PlayerInventory inv = p.getInventory();
         inv.clear();

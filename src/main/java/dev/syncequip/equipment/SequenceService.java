@@ -31,12 +31,7 @@ import org.bukkit.Particle;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 
-/**
- * Starts equip and unequip sequences and executes them step by step. Solo and squad mode share this one
- * implementation: a solo sequence is just a sequence with one participant.
- */
 public final class SequenceService implements SequenceCallbacks {
-
     public static final String BYPASS_COOLDOWN = "syncequip.bypass.cooldown";
 
     public enum Action {
@@ -44,9 +39,7 @@ public final class SequenceService implements SequenceCallbacks {
         UNEQUIP
     }
 
-    /** Everything a running sequence needs to remember, fixed when it starts so a reload cannot change it. */
     private record Context(SyncEquipSettings settings, Loadout loadout, Action action, boolean acceptExisting) {
-
         String key(String base) {
             return (action == Action.UNEQUIP ? "unequip." : "sequence.") + base;
         }
@@ -78,19 +71,10 @@ public final class SequenceService implements SequenceCallbacks {
         this.currentTick = currentTick;
     }
 
-    // ------------------------------------------------------------------ readiness
-
-    /** Checks whether a player could equip the original solo kit right now. */
     public Optional<Component> checkReady(Player player, SyncEquipSettings config) {
         return checkReady(player, config, config.soloLoadout(), config.soloUseDefaultLoadout(), false);
     }
 
-    /**
-     * Checks whether a player could take part in an equip sequence for this loadout.
-     *
-     * @param requireWork if true, a player who has nothing left to equip is told so instead of starting a no-op
-     * @return a short rendered reason if they cannot, or empty if they are ready
-     */
     public Optional<Component> checkReady(Player player, SyncEquipSettings config, Loadout loadout,
                                           boolean acceptExisting, boolean requireWork) {
         Optional<Component> basic = checkBasics(player);
@@ -145,15 +129,12 @@ public final class SequenceService implements SequenceCallbacks {
         return Optional.empty();
     }
 
-    /** Result of {@link #checkUnequip}: a reason the player cannot take part, or a note that there is nothing to remove. */
     public record UnequipCheck(Component problem, boolean nothingToRemove) {
-
         public boolean ready() {
             return problem == null && !nothingToRemove;
         }
     }
 
-    /** Checks whether a player can take the loadout off, without changing anything. */
     public UnequipCheck checkUnequip(Player player, Loadout loadout) {
         Optional<Component> basic = checkBasics(player);
         if (basic.isPresent()) {
@@ -165,8 +146,6 @@ public final class SequenceService implements SequenceCallbacks {
         }
         return new UnequipCheck(null, report.removable().isEmpty());
     }
-
-    // ------------------------------------------------------------------ starting
 
     public boolean startSolo(Player player) {
         SyncEquipSettings config = settings.get();
@@ -180,7 +159,6 @@ public final class SequenceService implements SequenceCallbacks {
         return true;
     }
 
-    /** Takes off the solo loadout one piece at a time, in reverse order. */
     public boolean startSoloUnequip(Player player) {
         SyncEquipSettings config = settings.get();
         UnequipCheck check = checkUnequip(player, config.soloLoadout());
@@ -194,16 +172,11 @@ public final class SequenceService implements SequenceCallbacks {
         return true;
     }
 
-    /**
-     * Starts a sequence for already-validated players on one shared timeline. All participants get the same start
-     * tick, so each step lands on the same server tick for every one of them.
-     */
     public SyncSequence startGroup(SyncSequence.Mode mode, UUID squadId, Player initiator, List<Player> players,
                                    int countdownSeconds, SyncEquipSettings config, Loadout loadout, Action action,
                                    int intervalTicks, boolean acceptExisting) {
         List<EquipmentStep> steps = action == Action.EQUIP ? loadout.steps() : loadout.unequipSteps();
         SequenceTimeline timeline = new SequenceTimeline(countdownSeconds, intervalTicks, steps);
-        // Every participant shares this one start tick, which is why each step lands on the same server tick for all of them.
         long startTick = currentTick.getAsLong() + 1;
         List<UUID> ids = players.stream().map(Player::getUniqueId).toList();
         SyncSequence sequence = scheduler.schedule(mode, squadId, initiator.getUniqueId(), ids, timeline,
@@ -232,13 +205,10 @@ public final class SequenceService implements SequenceCallbacks {
         return scheduler;
     }
 
-    /** What a running sequence is doing, or empty if the sequence is unknown. */
     public Optional<Action> actionOf(SyncSequence sequence) {
         Context ctx = contexts.get(sequence.id());
         return ctx == null ? Optional.empty() : Optional.of(ctx.action());
     }
-
-    // ------------------------------------------------------------------ callbacks
 
     @Override
     public void onCountdown(SyncSequence sequence, int secondsRemaining, long tick) {
@@ -438,8 +408,6 @@ public final class SequenceService implements SequenceCallbacks {
         }
         contexts.remove(sequence.id());
     }
-
-    // ------------------------------------------------------------------ helpers
 
     private Context contextFor(SyncSequence sequence) {
         Context ctx = contexts.get(sequence.id());

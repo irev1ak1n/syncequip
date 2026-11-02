@@ -17,7 +17,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MessageUtil {
-
     private static final MiniMessage MINI = MiniMessage.miniMessage();
 
     private final JavaPlugin plugin;
@@ -58,7 +57,6 @@ public final class MessageUtil {
     }
 
     public String raw(String key) {
-        // getString(key) falls back to the bundled defaults, getString(key, fallback) would not.
         String value = messages.getString(key);
         return value != null ? value : "<red>Missing message: " + key;
     }

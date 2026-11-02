@@ -10,7 +10,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 
 public final class HotkeyListener implements Listener {
-
     public static final String PERMISSION = "syncequip.hotkey";
 
     private final SyncEquipPlugin plugin;
@@ -26,7 +25,6 @@ public final class HotkeyListener implements Listener {
         if (!settings.controls().sneakSwapTrigger() || !player.isSneaking() || !player.hasPermission(PERMISSION)) {
             return;
         }
-        // The swap is cancelled so the offhand item is not disturbed when the trigger fires.
         event.setCancelled(true);
         // Holding the keys down must not queue up repeated sequences, so a busy player is ignored here.
         if (plugin.sequenceService().scheduler().isBusy(player.getUniqueId())) {

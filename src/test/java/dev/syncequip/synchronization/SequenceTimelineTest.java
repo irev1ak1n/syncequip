@@ -9,7 +9,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class SequenceTimelineTest {
-
     @Test
     void defaultStepsAreAtOffsetsZeroTwoFourSixEight() {
         SequenceTimeline timeline = new SequenceTimeline(0, 2, ConfigManager.DEFAULT_ORDER);

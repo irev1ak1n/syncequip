@@ -20,17 +20,11 @@ import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-/**
- * Validates a whole squad and launches its synchronized equip or unequip sequence. Every member is placed on one
- * shared {@link SyncSequence}, so each step is executed for all members inside the same tick.
- */
 public final class SquadSequenceController {
-
     public static final String PERMISSION_START = "syncequip.squad.start";
     public static final String PERMISSION_MANAGE = "syncequip.squad.manage";
     public static final String PERMISSION_ADMIN = "syncequip.admin";
 
-    /** How many excluded members the leader hears about by name before the rest are counted. */
     private static final int MAX_LISTED = 8;
 
     private final Server server;
@@ -52,12 +46,10 @@ public final class SquadSequenceController {
         return sender.hasPermission(PERMISSION_ADMIN);
     }
 
-    /** Who may start, cancel and unequip: the leader, or an administrator. */
     public static boolean canControl(Player player, Squad squad) {
         return (squad.isLeader(player.getUniqueId()) && player.hasPermission(PERMISSION_START)) || isAdmin(player);
     }
 
-    /** Who may change a squad's settings (speed, loadout, joining block): the leader, or an administrator. */
     public static boolean canManage(CommandSender sender, Squad squad) {
         if (isAdmin(sender)) {
             return true;
@@ -135,7 +127,6 @@ public final class SquadSequenceController {
         return true;
     }
 
-    /** Takes the loadout off every member who can, in reverse order and on shared ticks. Others are left out and told why. */
     public boolean unequip(Player requester) {
         Optional<Squad> found = controlledSquad(requester);
         if (found.isEmpty()) {

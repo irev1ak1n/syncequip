@@ -7,7 +7,6 @@ import java.util.UUID;
 import java.util.function.BiFunction;
 
 final class RecordingCallbacks implements SequenceCallbacks {
-
     record Execution(long sequenceId, UUID participant, EquipmentStep step, int index, long scheduled, long actual) {
     }
 

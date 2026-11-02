@@ -25,7 +25,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class ConfigManager {
-
     public static final List<EquipmentStep> DEFAULT_ORDER = List.of(EquipmentStep.BOOTS, EquipmentStep.LEGGINGS,
             EquipmentStep.CHESTPLATE, EquipmentStep.HELMET, EquipmentStep.SHIELD);
 
@@ -52,12 +51,10 @@ public final class ConfigManager {
         return settings;
     }
 
-    /** Invalid values fall back to safe defaults and add a warning, so a bad config never stops the plugin loading. */
     public static SyncEquipSettings parse(ConfigurationSection config, List<String> warnings) {
         int interval = intInRange(config, "equipment.interval-ticks", 2,
                 SequenceTimeline.MIN_INTERVAL, SequenceTimeline.MAX_INTERVAL, warnings);
         List<EquipmentStep> order = parseOrder(config, warnings);
-        // Occupied slots are always swapped now. The old option is read only to tell the owner it no longer applies.
         boolean requireEmpty = false;
         if (config.getBoolean("equipment.require-empty-slots", false)) {
             warnings.add("equipment.require-empty-slots is no longer used. Worn items and held items are swapped "

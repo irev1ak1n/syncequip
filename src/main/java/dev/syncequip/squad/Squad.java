@@ -8,14 +8,12 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class Squad {
-
     private final UUID id = UUID.randomUUID();
     private final Set<UUID> members;
     private final Map<UUID, Long> invites = new HashMap<>();
     private final SquadProfile profile;
     private UUID leader;
 
-    /** A new squad with one member. */
     Squad(UUID leader, SquadProfile profile) {
         this.leader = leader;
         this.profile = profile;
@@ -24,7 +22,6 @@ public final class Squad {
         members.add(leader);
     }
 
-    /** A squad brought back from disk: the profile already holds its members. */
     static Squad restored(UUID leader, SquadProfile profile) {
         return new Squad(leader, profile, true);
     }
@@ -47,12 +44,10 @@ public final class Squad {
         return profile;
     }
 
-    /** The squad's own speed, or the global default when it has none. */
     public int effectiveSpeed(int globalDefault) {
         return profile.speed() != null ? profile.speed() : globalDefault;
     }
 
-    /** The squad's own loadout, or the global default when it has none. */
     public Loadout effectiveLoadout(Loadout globalDefault) {
         return profile.loadout() != null ? profile.loadout() : globalDefault;
     }

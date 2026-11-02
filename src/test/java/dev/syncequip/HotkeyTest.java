@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 class HotkeyTest extends PluginTestBase {
-
     private PlayerSwapHandItemsEvent pressSwap(PlayerMock player) {
         PlayerSwapHandItemsEvent event = new PlayerSwapHandItemsEvent(player,
                 player.getInventory().getItemInOffHand(), player.getInventory().getItemInMainHand());

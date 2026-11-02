@@ -3,29 +3,16 @@ package dev.syncequip.equipment;
 import java.util.Locale;
 import org.bukkit.Material;
 
-/**
- * What one slot of a loadout needs.
- *
- * @param kind     which items are acceptable
- * @param material the exact item for {@link Kind#MATERIAL}, otherwise {@code null}
- * @param optional if true, a missing or blocked slot is skipped quietly instead of following the missing item policy
- */
 public record SlotRequirement(Kind kind, Material material, boolean optional) {
-
     public enum Kind {
-        /** The slot does not take part in the sequence at all. */
         NONE,
-        /** The normal item for the slot: any armor of that kind, a shield offhand, a sword in the main hand. */
         ANY,
         ANY_SWORD,
         ANY_AXE,
-        /** Exactly this item. */
         MATERIAL
     }
 
-    /** Result of reading a command or config word. Exactly one of the two fields is set. */
     public record Parsed(SlotRequirement requirement, String error) {
-
         public boolean ok() {
             return requirement != null;
         }
@@ -59,7 +46,6 @@ public record SlotRequirement(Kind kind, Material material, boolean optional) {
         };
     }
 
-    /** The word that reads back as this requirement, for config files and command output. */
     public String token() {
         return switch (kind) {
             case NONE -> "none";
@@ -70,7 +56,6 @@ public record SlotRequirement(Kind kind, Material material, boolean optional) {
         };
     }
 
-    /** Short name for chat messages, such as "Helmet", "Sword" or "Totem Of Undying". */
     public String label(EquipmentStep step) {
         return switch (kind) {
             case NONE -> step.displayName();
@@ -92,10 +77,6 @@ public record SlotRequirement(Kind kind, Material material, boolean optional) {
         return out.toString();
     }
 
-    /**
-     * Reads a word such as {@code any}, {@code none}, {@code any_sword}, {@code netherite_helmet}, or an armor
-     * material alone like {@code netherite}, for the given slot.
-     */
     public static Parsed parse(EquipmentStep step, String raw) {
         if (raw == null || raw.isBlank()) {
             return fail("Give an item name, any or none.");

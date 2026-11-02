@@ -14,15 +14,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 
-/**
- * Watches for players stepping onto a block whose material belongs to a squad.
- *
- * <p>Movement is the hot path with 100 players on a server, so almost every event leaves on the first cheap check:
- * only a move into a new block (or landing on one) is looked at, and only in worlds that have a joining block.
- * The material lookup is a single block read and a map lookup.
- */
+/** Movement is the hot path, so almost every event leaves on the first cheap check. */
 public final class JoinBlockListener implements Listener {
-
     private final JoinBlockService service;
     private final SquadManager squads;
 

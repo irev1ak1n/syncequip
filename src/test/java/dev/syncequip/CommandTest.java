@@ -12,7 +12,6 @@ import org.mockbukkit.mockbukkit.command.ConsoleCommandSenderMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 class CommandTest extends PluginTestBase {
-
     @Test
     void createInviteJoinListLeave() {
         PlayerMock leader = server.addPlayer("Leader");

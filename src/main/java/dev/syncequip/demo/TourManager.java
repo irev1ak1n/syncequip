@@ -1,6 +1,7 @@
 package dev.syncequip.demo;
 
 import dev.syncequip.SyncEquipPlugin;
+import dev.syncequip.synchronization.FinishReason;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -16,29 +17,21 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scheduler.BukkitTask;
 
-/**
- * A scripted walkthrough of the main features. Test players (named with a prefix, normally Mineflayer bots) are lined
- * up in front of the viewer and driven with the ordinary SyncEquip commands, so every equipment change is a real
- * server-side change made by the normal plugin code.
- *
- * <p>The tour only plays the viewer's titles and waits. The bots are told when to walk by a private message that starts
- * with {@link #CUE}. Everything it changes is put back by {@link #cleanup}.
- */
+/** Scripted walkthrough driven by test players through the ordinary commands. Everything it changes is put back by {@link #cleanup}. */
 public final class TourManager {
-
     public static final String CUE = "[SE-TOUR] ";
     public static final String SQUAD = "NULL";
     private static final int DEFAULT_BOTS = 5;
     private static final int LINE_DISTANCE = 12;
     private static final int STRIP_START = 8;
     private static final int STRIP_DEPTH = 3;
-    /** Title fade in, stay and fade out, in milliseconds. */
     private static final int FADE_IN = 250;
     private static final int STAY = 2500;
     private static final int FADE_OUT = 500;
@@ -93,7 +86,6 @@ public final class TourManager {
         return plugin.getConfig().getString("demo.tour.bot-prefix", "TourBot");
     }
 
-    /** How many test players the tour uses. */
     public int required() {
         return Math.max(2, Math.min(10, plugin.getConfig().getInt("demo.tour.bots", DEFAULT_BOTS)));
     }
@@ -107,8 +99,6 @@ public final class TourManager {
                 .map(p -> (Player) p)
                 .toList();
     }
-
-    // ------------------------------------------------------------------ controls
 
     public StartResult start(Player viewer) {
         if (running()) {
@@ -147,7 +137,6 @@ public final class TourManager {
         paused = false;
     }
 
-    /** Stops the tour and puts everything back. Returns false if no tour was running. */
     public boolean stop() {
         if (!running()) {
             return false;
@@ -161,7 +150,6 @@ public final class TourManager {
         return start(newViewer);
     }
 
-    /** Called when the plugin shuts down, so no obsidian is left behind. */
     public void shutdown() {
         if (running()) {
             task.cancel();
@@ -169,8 +157,6 @@ public final class TourManager {
             cleanup();
         }
     }
-
-    // ------------------------------------------------------------------ the loop
 
     private void tick() {
         if (paused || viewer == null || !viewer.isOnline()) {
@@ -217,7 +203,6 @@ public final class TourManager {
         delay = INTRO_TICKS;
     }
 
-    /** Runs a step's action once its title, if it had one, has gone and the pause after it is over. */
     private void begin(Step step) {
         step.action().run();
         if (step.until() != null) {
@@ -228,10 +213,6 @@ public final class TourManager {
         }
     }
 
-    /**
-     * Checked before every stage: all test players are online and standing where they should be. A player who is
-     * out of place is put back and the viewer is told. A stage never starts with someone missing.
-     */
     private boolean ensureReady() {
         List<Player> current = new ArrayList<>();
         for (String name : names) {
@@ -323,8 +304,6 @@ public final class TourManager {
         }
     }
 
-    // ------------------------------------------------------------------ the script
-
     private void add(String title, String subtitle, Runnable action, int hold) {
         steps.add(new Step(title, subtitle, action, hold, null, 0));
     }
@@ -399,32 +378,34 @@ public final class TourManager {
         return number + "/" + total + " — " + name;
     }
 
-    // ------------------------------------------------------------------ actions
-
     private void formUp() {
         cleanupSquad();
         giveKits();
-        World world = viewer.getWorld();
-        int[] facing = cardinal(viewer.getLocation().getYaw());
-        int fx = facing[0];
-        int fz = facing[1];
-        Block origin = viewer.getLocation().getBlock();
-        int count = bots.size();
-        float yaw = (float) Math.toDegrees(Math.atan2(fx, -fz));
         List<Location> slots = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            int offset = 2 * i - (count - 1);
-            int x = origin.getX() + fx * LINE_DISTANCE - fz * offset;
-            int z = origin.getZ() + fz * LINE_DISTANCE + fx * offset;
-            int y = world.getHighestBlockYAt(x, z) + 1;
-            Location at = new Location(world, x + 0.5, y, z + 0.5, yaw, 0);
+        for (int i = 0; i < bots.size(); i++) {
+            Location at = standingOn(groundAt(LINE_DISTANCE, i));
             slots.add(at);
             bots.get(i).teleport(at);
         }
         expected = slots;
     }
 
-    /** The compass direction a yaw points to, as a step in x and z. */
+    private Block groundAt(int distance, int lane) {
+        int[] facing = cardinal(viewer.getLocation().getYaw());
+        int offset = 2 * lane - (bots.size() - 1);
+        Block origin = viewer.getLocation().getBlock();
+        int x = origin.getX() + facing[0] * distance - facing[1] * offset;
+        int z = origin.getZ() + facing[1] * distance + facing[0] * offset;
+        World world = viewer.getWorld();
+        return world.getBlockAt(x, world.getHighestBlockYAt(x, z), z);
+    }
+
+    private Location standingOn(Block ground) {
+        int[] facing = cardinal(viewer.getLocation().getYaw());
+        float yaw = (float) Math.toDegrees(Math.atan2(facing[0], -facing[1]));
+        return ground.getLocation().add(0.5, 1, 0.5).setRotation(yaw, 0);
+    }
+
     private static int[] cardinal(float yaw) {
         double radians = Math.toRadians(yaw);
         double dx = -Math.sin(radians);
@@ -433,25 +414,14 @@ public final class TourManager {
     }
 
     private void prepareJoining() {
-        World world = viewer.getWorld();
-        int[] facing = cardinal(viewer.getLocation().getYaw());
-        int fx = facing[0];
-        int fz = facing[1];
-        Block origin = viewer.getLocation().getBlock();
-        int count = bots.size();
-        float yaw = (float) Math.toDegrees(Math.atan2(fx, -fz));
         List<Location> spots = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            int offset = 2 * i - (count - 1);
+        for (int lane = 0; lane < bots.size(); lane++) {
             for (int depth = 0; depth < STRIP_DEPTH; depth++) {
-                int distance = STRIP_START - depth;
-                int x = origin.getX() + fx * distance - fz * offset;
-                int z = origin.getZ() + fz * distance + fx * offset;
-                Block ground = world.getBlockAt(x, world.getHighestBlockYAt(x, z), z);
+                Block ground = groundAt(STRIP_START - depth, lane);
                 changedBlocks.putIfAbsent(ground.getLocation(), ground.getBlockData());
                 ground.setType(Material.OBSIDIAN, false);
                 if (depth == STRIP_DEPTH / 2) {
-                    spots.add(new Location(world, x + 0.5, ground.getY() + 1, z + 0.5, yaw, 0));
+                    spots.add(standingOn(ground));
                 }
             }
         }
@@ -460,7 +430,6 @@ public final class TourManager {
         run("squad block set obsidian");
     }
 
-    /** Tells these bots to walk to the middle of their own obsidian lane. The leader walks too. */
     private void sendWalkCue(List<Player> who) {
         for (Player bot : who) {
             Location to = lanes.get(bots.indexOf(bot));
@@ -474,7 +443,7 @@ public final class TourManager {
 
     private boolean arrived(Player bot) {
         return bot.isOnline() && plugin.squads().squadOf(bot.getUniqueId()).isPresent()
-                && bot.getLocation().getBlock().getRelative(org.bukkit.block.BlockFace.DOWN).getType() == Material.OBSIDIAN;
+                && bot.getLocation().getBlock().getRelative(BlockFace.DOWN).getType() == Material.OBSIDIAN;
     }
 
     private boolean allArrived() {
@@ -485,7 +454,6 @@ public final class TourManager {
         return bots.stream().filter(b -> !arrived(b)).toList();
     }
 
-    /** First recovery: anyone who did not make it onto the obsidian is told to walk again. */
     private void retryWalkers() {
         List<Player> stuck = notArrived();
         if (!stuck.isEmpty()) {
@@ -505,7 +473,6 @@ public final class TourManager {
         needSquad = true;
     }
 
-    /** A bot that is not in the squad yet is let in the same way stepping on the block does. */
     private void joinStragglers() {
         plugin.squads().profile(SQUAD).ifPresent(profile -> {
             for (Player bot : bots) {
@@ -527,7 +494,6 @@ public final class TourManager {
         run("squad loadout set helmet none");
     }
 
-    /** Every fourth bot gets a different problem for the planner to solve. */
     private void awkwardInventories() {
         run("squad loadout set boots netherite");
         for (int i = 0; i < bots.size(); i++) {
@@ -549,8 +515,6 @@ public final class TourManager {
             inv.setHeldItemSlot(0);
         }
     }
-
-    // ------------------------------------------------------------------ items and cleanup
 
     private void giveKits() {
         bots.forEach(this::giveKit);
@@ -575,7 +539,7 @@ public final class TourManager {
     private void cleanup() {
         for (Player bot : bots) {
             plugin.sequenceService().scheduler().findByParticipant(bot.getUniqueId())
-                    .ifPresent(s -> s.cancel(dev.syncequip.synchronization.FinishReason.CANCELLED));
+                    .ifPresent(s -> s.cancel(FinishReason.CANCELLED));
         }
         cleanupSquad();
         for (Player bot : bots) {

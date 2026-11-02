@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 class InventoryValidatorTest extends PluginTestBase {
-
     @Test
     void fullKitIsAllAvailable() {
         PlayerMock player = playerWithKit("Steve");

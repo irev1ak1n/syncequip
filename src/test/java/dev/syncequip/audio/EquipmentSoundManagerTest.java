@@ -12,7 +12,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
 class EquipmentSoundManagerTest {
-
     private static final String FALLBACK = "minecraft:item.armor.equip_generic";
 
     @Test

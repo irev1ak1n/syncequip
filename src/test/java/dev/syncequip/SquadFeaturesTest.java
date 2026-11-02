@@ -23,7 +23,6 @@ import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 /** Squad speed, custom loadouts and synchronized unequipping. */
 class SquadFeaturesTest extends V11TestBase {
-
     private void equipSquad(PlayerMock leader) {
         run(leader, "squad", "start");
         tick(100);

@@ -10,7 +10,6 @@ import java.util.logging.Logger;
 
 /** One shared scheduler advances every sequence, so no player gets a private timer that could drift away from the others. */
 public final class TickSequenceScheduler {
-
     private final Logger logger;
     private final List<SyncSequence> active = new ArrayList<>();
     private long nextId = 1;

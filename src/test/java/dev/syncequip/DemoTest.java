@@ -26,7 +26,6 @@ import org.mockbukkit.mockbukkit.entity.PlayerMock;
 import org.mockbukkit.mockbukkit.exception.UnimplementedOperationException;
 
 class DemoTest extends PluginTestBase {
-
     private PlayerMock op;
 
     @BeforeEach

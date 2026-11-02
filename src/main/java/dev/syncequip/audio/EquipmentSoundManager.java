@@ -7,9 +7,7 @@ import org.bukkit.Material;
 import org.bukkit.SoundCategory;
 import org.bukkit.entity.Player;
 
-/** With custom sounds on, armor is equipped silently and this class plays one sound per step. With them off, it plays nothing. */
 public final class EquipmentSoundManager {
-
     public static String vanillaArmorSound(Material material, String fallback) {
         String name = material.name();
         if (material == Material.TURTLE_HELMET) {
@@ -62,7 +60,6 @@ public final class EquipmentSoundManager {
         playStep(location, step, material, sounds, 1.0f);
     }
 
-    /** Plays the step sound at a position for everyone in hearing range. Taking things off passes a lower pitch. */
     public void playStep(Location location, EquipmentStep step, Material material, SyncEquipSettings.Sounds sounds,
                          float pitchMultiplier) {
         String key = soundFor(step, material, sounds);

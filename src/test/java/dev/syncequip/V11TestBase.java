@@ -17,7 +17,6 @@ import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 /** Helpers for squads, joining blocks and large groups. */
 public abstract class V11TestBase extends PluginTestBase {
-
     protected World world;
 
     @BeforeEach

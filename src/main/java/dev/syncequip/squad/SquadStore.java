@@ -18,13 +18,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 
-/**
- * Reads and writes {@code squads.yml}. Only what is needed to bring a squad back is stored: its name, the owner's
- * unique id, its member ids, its speed and loadout, and its joining block material and world. Players are only ever
- * stored as unique ids. No names, addresses or other player details are saved.
- */
+/** Reads and writes {@code squads.yml}. Players are stored only as unique ids. */
 public final class SquadStore {
-
     private final Path file;
     private final Logger logger;
 
@@ -33,7 +28,6 @@ public final class SquadStore {
         this.logger = logger;
     }
 
-    /** Reads every saved squad. Entries that cannot be read are skipped and reported in {@code warnings}. */
     public List<SquadProfile> load(List<String> warnings) {
         List<SquadProfile> result = new ArrayList<>();
         if (!Files.exists(file)) {
@@ -115,7 +109,6 @@ public final class SquadStore {
         return result;
     }
 
-    /** Builds the file contents on the calling thread so the actual write can happen elsewhere. */
     public String serialize(Collection<SquadProfile> profiles) {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("version", 1);
