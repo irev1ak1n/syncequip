@@ -1,6 +1,6 @@
 # SyncEquip
 
-SyncEquip is a Minecraft Java plugin that lets players synchronize armor and weapon equipping across entire squads. Built as a personal Java development project, it explores multiplayer synchronization, inventory management, and customizable equipment mechanics while making coordinated gameplay more fun and creative.
+A Minecraft plugin built for content creators, enabling synchronized equipment sequences and squad coordination. Developed as a personal Java project to explore multiplayer mechanics and simplify the production of cinematic Minecraft videos.
 
 ## Download
 
