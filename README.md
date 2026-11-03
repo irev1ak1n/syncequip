@@ -51,6 +51,12 @@ Want to build it yourself, or run the guided tour with test players? See the [De
 
 ## Permissions
 
+**You don't need OP for normal squad gameplay.** By default, everyone can create and manage their own squads, use joining blocks, and run synchronized equipment sequences. Only admin features such as the demo, reload, and managing other players' squads require operator permissions.
+
+**If you need operator access:** the server owner can open their hosting panel's **Console** and enter `op PlayerName` (for example, `op SpokeIsHere`). Enter it **without a slash** in the server console. If you're running your own server, use its server console instead. No PowerShell is needed for a hosted server.
+
+**Prefer not to give full OP?** If your server uses [LuckPerms](https://luckperms.net/), an admin can grant specific SyncEquip permissions instead. For example, in the server console, run `lp user PlayerName permission set syncequip.demo true` to let that player use the demo. Use the permission table below to choose other permissions. Anyone stepping on a squad's configured joining block can join under the normal squad rules without becoming OP.
+
 | Permission | Default | Grants |
 |---|---|---|
 | `syncequip.use` | everyone | `/syncequip solo`, `/syncequip settings` |
