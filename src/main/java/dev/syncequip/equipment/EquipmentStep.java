@@ -1,5 +1,7 @@
 package dev.syncequip.equipment;
 
+import io.papermc.paper.datacomponent.DataComponentTypes;
+import io.papermc.paper.datacomponent.item.Equippable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -41,6 +43,17 @@ public enum EquipmentStep {
         return configKey;
     }
 
+    /** The word players use for this slot in commands. */
+    public String slotWord() {
+        return switch (this) {
+            case BOOTS -> "feet";
+            case LEGGINGS -> "legs";
+            case CHESTPLATE -> "chest";
+            case HELMET -> "head";
+            default -> configKey;
+        };
+    }
+
     public double bodyHeight() {
         return bodyHeight;
     }
@@ -64,16 +77,42 @@ public enum EquipmentStep {
         };
     }
 
+    /** Whether the game lets this item be worn in the step's slot (hands take anything). */
+    public boolean canWear(Material material) {
+        if (material == null || material.isAir() || !material.isItem()) {
+            return false;
+        }
+        if (isHand()) {
+            return true;
+        }
+        Equippable equippable = null;
+        try {
+            equippable = material.asItemType().getDefaultData(DataComponentTypes.EQUIPPABLE);
+        } catch (RuntimeException e) {
+            // Fall back to the names below when item data is not available.
+        }
+        return equippable != null ? equippable.slot() == slot : matches(material) || wornByName(material);
+    }
+
+    private boolean wornByName(Material material) {
+        String name = material.name();
+        return switch (this) {
+            case HELMET -> material == Material.CARVED_PUMPKIN || name.endsWith("_HEAD") || name.endsWith("_SKULL");
+            case CHESTPLATE -> material == Material.ELYTRA;
+            default -> false;
+        };
+    }
+
     public static Optional<EquipmentStep> parse(String raw) {
         if (raw == null) {
             return Optional.empty();
         }
         String key = raw.trim().toLowerCase(Locale.ROOT).replace("-", "_");
         return switch (key) {
-            case "boots" -> Optional.of(BOOTS);
-            case "leggings" -> Optional.of(LEGGINGS);
-            case "chestplate" -> Optional.of(CHESTPLATE);
-            case "helmet" -> Optional.of(HELMET);
+            case "boots", "feet", "foot" -> Optional.of(BOOTS);
+            case "leggings", "legs" -> Optional.of(LEGGINGS);
+            case "chestplate", "chest" -> Optional.of(CHESTPLATE);
+            case "helmet", "head" -> Optional.of(HELMET);
             case "shield", "offhand", "off_hand" -> Optional.of(SHIELD);
             case "mainhand", "main_hand", "sword", "weapon" -> Optional.of(MAIN_HAND);
             default -> Optional.empty();

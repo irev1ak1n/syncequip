@@ -78,7 +78,7 @@ Base command: `/syncequip` (aliases `/se`, `/sequip`). Every subcommand has tab 
 | Command | Description |
 |---|---|
 | `/syncequip help [page or name]` | Paged help |
-| `/syncequip solo` | Start your personal equipment sequence |
+| `/syncequip solo` | Start your personal equipment sequence (change what it equips under [Loadout](#loadout-choose-what-gets-equipped)) |
 | `/syncequip unequip` | Take your own gear off in reverse order |
 | `/syncequip settings` | Show the settings currently in effect |
 | `/syncequip reload` | Reload `config.yml` and `messages.yml` |
@@ -109,15 +109,22 @@ Base command: `/syncequip` (aliases `/se`, `/sequip`). Every subcommand has tab 
 | `/syncequip squad block info` | Show the material and world |
 | `/syncequip squad block enable` / `disable` | Turn joining by stepping on the block on or off |
 
-### Loadout
+### Loadout: choose what gets equipped
+
+Everything is set in game, no config editing. The six slots are `mainhand`, `offhand`, `head`, `chest`, `legs` and `feet`. The item can be any item for the hands, or anything Minecraft lets you wear in that slot (a carved pumpkin or player head on `head`, an elytra on `chest`). Use `any` for "whatever fits" and `off` to leave a slot alone. Tab completion suggests slots and items.
 
 | Command | Description |
 |---|---|
-| `/syncequip squad loadout show` | Show what each slot needs |
-| `/syncequip squad loadout set <slot> <item>` | Set a slot: `mainhand`, `offhand`, `helmet`, `chestplate`, `leggings` or `boots`. Use `none` to skip a slot |
+| `/syncequip solo set <slot> <item>` | Choose what `/se solo` equips for you, for example `/se solo set head carved_pumpkin` |
+| `/syncequip solo show` / `reset` | See your own loadout, or go back to the server default |
+| `/syncequip group set [group] <slot> <item>` | The same for a group, for example `/se group set NULL offhand totem_of_undying`. The group name can be left out if you lead one (leader) |
+| `/syncequip group show [group]` / `reset [group]` | See or restore a group's loadout |
 | `/syncequip squad loadout optional <slot> on\|off` | Skip the slot quietly when the item is missing |
 | `/syncequip squad loadout order <slots...>` | Slots that go first |
-| `/syncequip squad loadout reset` | Back to the defaults |
+
+`/se group` works exactly like `/se squad`, and the older `/se squad loadout set ...` commands (with `helmet`, `chestplate`, `leggings`, `boots`) still work.
+
+Items are only ever taken from the player's own inventory, with enchantments, names and durability intact. If a player has nothing for a slot, that slot is skipped and they are told which one; everything else still equips. Your own solo loadout replaces the server's `loadout.solo-uses-default` setting, and solo and group loadouts are separate. They are saved in `plugins/SyncEquip/solo-loadouts.yml` and `squads.yml`.
 
 ### Demo and tour (op)
 

@@ -6,6 +6,7 @@ import dev.syncequip.SyncEquipPlugin;
 import dev.syncequip.config.SyncEquipSettings;
 import dev.syncequip.demo.DemoManager;
 import dev.syncequip.demo.TourManager;
+import dev.syncequip.equipment.EquipmentStep;
 import dev.syncequip.equipment.SequenceService;
 import dev.syncequip.squad.Squad;
 import dev.syncequip.squad.SquadManager;
@@ -35,11 +36,12 @@ public final class SyncEquipCommand implements BasicCommand {
     public static final String PERMISSION_RELOAD = "syncequip.reload";
     public static final String PERMISSION_DEMO = "syncequip.demo";
 
-    private static final List<String> ROOT = List.of("solo", "unequip", "squad", "demo", "settings", "reload", "help");
+    private static final List<String> ROOT = List.of("solo", "unequip", "squad", "group", "demo", "settings", "reload", "help");
     private static final List<String> DEMO = List.of("spawn", "start", "repeat", "stop", "reset", "clear", "speed",
             "tour");
     private static final List<String> SQUAD = List.of("create", "invite", "join", "leave", "list", "info", "start",
             "cancel", "unequip", "transfer", "speed", "block", "loadout", "disband");
+    private static final List<String> GROUP_LOADOUT = List.of("set", "show", "reset");
     private static final List<String> SQUAD_CONFIG = List.of("info", "speed", "block", "pad", "loadout", "disband");
 
     private final SyncEquipPlugin plugin;
@@ -65,9 +67,9 @@ public final class SyncEquipCommand implements BasicCommand {
             return;
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
-            case "solo" -> solo(sender);
+            case "solo" -> solo(sender, args);
             case "unequip" -> soloUnequip(sender);
-            case "squad" -> squad(sender, args);
+            case "squad", "group" -> squad(sender, args);
             case "demo" -> demo(sender, args);
             case "settings" -> settings(sender);
             case "reload" -> reload(sender);
@@ -84,9 +86,13 @@ public final class SyncEquipCommand implements BasicCommand {
         plugin.sequenceService().startSoloUnequip(player);
     }
 
-    private void solo(CommandSender sender) {
+    private void solo(CommandSender sender, String[] args) {
         Player player = requirePlayer(sender);
         if (player == null || !requirePermission(player, PERMISSION_USE)) {
+            return;
+        }
+        if (args.length > 1) {
+            plugin.loadoutCommands().solo(player, args);
             return;
         }
         plugin.sequenceService().startSolo(player);
@@ -268,10 +274,23 @@ public final class SyncEquipCommand implements BasicCommand {
             case "unequip" -> plugin.squadController().unequip(player);
             case "info", "speed", "block", "pad", "loadout", "disband" ->
                     plugin.squadConfig().handle(player, args[1].toLowerCase(Locale.ROOT), args);
+            case "set", "show", "reset" -> groupLoadout(player, args);
             case "cancel" -> plugin.squadController().cancel(player);
             case "transfer" -> withTarget(player, args, "transfer", target -> squadTransfer(player, target));
             default -> messages.send(player, "command.squad-usage");
         }
+    }
+
+    /** {@code /syncequip group set [group] <slot> <item>}, {@code show [group]} and {@code reset [group]}. */
+    private void groupLoadout(Player player, String[] args) {
+        String action = args[1].toLowerCase(Locale.ROOT);
+        String group = null;
+        int from = 2;
+        if (args.length > 2 && (!action.equals("set") || EquipmentStep.parse(args[2]).isEmpty())) {
+            group = args[2];
+            from = 3;
+        }
+        plugin.squadConfig().loadout(player, action, group, LoadoutCommands.rest(args, from));
     }
 
     private void withTarget(Player player, String[] args, String sub, Consumer<Player> action) {
@@ -438,7 +457,7 @@ public final class SyncEquipCommand implements BasicCommand {
 
     private static int helpPageIndex(List<String> pages, String input) {
         String word = switch (input.toLowerCase(Locale.ROOT)) {
-            case "squad" -> "squads";
+            case "squad", "group" -> "squads";
             case "pad", "joining", "block" -> "blocks";
             case "loadouts" -> "loadout";
             case "equip", "unequip", "speed", "sequence" -> "sequences";
@@ -508,13 +527,22 @@ public final class SyncEquipCommand implements BasicCommand {
             }
             return List.of();
         }
-        if (!args[0].equalsIgnoreCase("squad") || !sender.hasPermission(PERMISSION_SQUAD)) {
+        if (args[0].equalsIgnoreCase("solo") && sender.hasPermission(PERMISSION_USE)) {
+            return plugin.loadoutCommands().completeSolo(args);
+        }
+        boolean squadWord = args[0].equalsIgnoreCase("squad") || args[0].equalsIgnoreCase("group");
+        if (!squadWord || !sender.hasPermission(PERMISSION_SQUAD)) {
             return List.of();
         }
         if (args.length == 2) {
-            return filter(SQUAD.stream(), args[1]);
+            Stream<String> subs = args[0].equalsIgnoreCase("group") ? Stream.concat(SQUAD.stream(), GROUP_LOADOUT.stream())
+                    : SQUAD.stream();
+            return filter(subs, args[1]);
         }
         String sub = args[1].toLowerCase(Locale.ROOT);
+        if (sub.equals("set") || sub.equals("show") || sub.equals("reset")) {
+            return plugin.squadConfig().completeGroup(sender, args);
+        }
         if (SQUAD_CONFIG.contains(sub)) {
             return plugin.squadConfig().complete(sender, args);
         }
@@ -555,7 +583,7 @@ public final class SyncEquipCommand implements BasicCommand {
     private static boolean canSee(CommandSender sender, String sub) {
         return switch (sub) {
             case "reload" -> sender.hasPermission(PERMISSION_RELOAD);
-            case "squad" -> sender.hasPermission(PERMISSION_SQUAD);
+            case "squad", "group" -> sender.hasPermission(PERMISSION_SQUAD);
             case "demo" -> sender.hasPermission(PERMISSION_DEMO);
             default -> true;
         };

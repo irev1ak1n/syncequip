@@ -3,6 +3,7 @@ package dev.syncequip;
 import static dev.syncequip.util.MessageUtil.ph;
 
 import dev.syncequip.audio.EquipmentSoundManager;
+import dev.syncequip.commands.LoadoutCommands;
 import dev.syncequip.commands.SquadConfigCommands;
 import dev.syncequip.commands.SyncEquipCommand;
 import dev.syncequip.config.ConfigManager;
@@ -12,6 +13,7 @@ import dev.syncequip.demo.DemoManager;
 import dev.syncequip.demo.TourManager;
 import dev.syncequip.equipment.EquipmentManager;
 import dev.syncequip.equipment.SequenceService;
+import dev.syncequip.equipment.SoloLoadouts;
 import dev.syncequip.listeners.HotkeyListener;
 import dev.syncequip.listeners.JoinBlockListener;
 import dev.syncequip.listeners.PlayerListener;
@@ -43,7 +45,10 @@ public class SyncEquipPlugin extends JavaPlugin {
     private TourManager tour;
     private JoinBlockService joinBlocks;
     private SquadStore squadStore;
+    private SoloLoadouts soloLoadouts;
+    private boolean soloSaveScheduled;
     private SquadConfigCommands squadConfig;
+    private LoadoutCommands loadoutCommands;
     private boolean saveScheduled;
     private CooldownTracker cooldowns;
     private BukkitTask tickTask;
@@ -55,11 +60,17 @@ public class SyncEquipPlugin extends JavaPlugin {
         messages = new MessageUtil(this);
         messages.load();
 
+        soloLoadouts = new SoloLoadouts(getDataFolder().toPath().resolve("solo-loadouts.yml"), getLogger());
+        List<String> soloWarnings = new java.util.ArrayList<>();
+        soloLoadouts.load(soloWarnings);
+        soloWarnings.forEach(w -> getLogger().warning(w));
+        soloLoadouts.setChangeListener(this::markSoloDirty);
+
         scheduler = new TickSequenceScheduler(getLogger());
         cooldowns = new CooldownTracker(System::currentTimeMillis);
         squads = new SquadManager(System::currentTimeMillis);
         sequenceService = new SequenceService(getServer(), getLogger(), scheduler, this::settings,
-                new EquipmentManager(), new EquipmentSoundManager(), messages, cooldowns, Bukkit::getCurrentTick);
+                new EquipmentManager(), new EquipmentSoundManager(), messages, cooldowns, soloLoadouts, Bukkit::getCurrentTick);
         squadController = new SquadSequenceController(getServer(), squads, sequenceService, messages, this::settings);
 
         squadStore = new SquadStore(getDataFolder().toPath().resolve("squads.yml"), getLogger());
@@ -70,6 +81,7 @@ public class SyncEquipPlugin extends JavaPlugin {
         joinBlocks = new JoinBlockService(getServer(), squads, messages, this::settings, System::currentTimeMillis);
         joinBlocks.reindex();
         squads.setChangeListener(this::markSquadsDirty);
+        loadoutCommands = new LoadoutCommands(this);
         squadConfig = new SquadConfigCommands(this);
 
         demo = new DemoManager(this, scheduler, this::settings, new EquipmentSoundManager(), messages, Bukkit::getCurrentTick);
@@ -100,6 +112,10 @@ public class SyncEquipPlugin extends JavaPlugin {
         if (tickTask != null) {
             tickTask.cancel();
         }
+        if (soloLoadouts != null && (soloLoadouts.exists() || !soloLoadouts.isEmpty())) {
+            soloLoadouts.setChangeListener(() -> { });
+            soloLoadouts.write(soloLoadouts.serialize());
+        }
         if (squads != null && squadStore != null) {
             squadStore.write(squadStore.serialize(squads.profiles()));
             squads.setChangeListener(() -> { });
@@ -116,6 +132,22 @@ public class SyncEquipPlugin extends JavaPlugin {
             saveScheduled = false;
             flushSquads(false);
         }, 20L);
+    }
+
+    private void markSoloDirty() {
+        if (soloSaveScheduled || !isEnabled()) {
+            return;
+        }
+        soloSaveScheduled = true;
+        getServer().getScheduler().runTaskLater(this, () -> {
+            soloSaveScheduled = false;
+            String contents = soloLoadouts.serialize();
+            getServer().getScheduler().runTaskAsynchronously(this, () -> soloLoadouts.write(contents));
+        }, 20L);
+    }
+
+    public SoloLoadouts soloLoadouts() {
+        return soloLoadouts;
     }
 
     public void flushSquads(boolean wait) {
@@ -184,6 +216,10 @@ public class SyncEquipPlugin extends JavaPlugin {
 
     public JoinBlockService joinBlocks() {
         return joinBlocks;
+    }
+
+    public LoadoutCommands loadoutCommands() {
+        return loadoutCommands;
     }
 
     public SquadConfigCommands squadConfig() {

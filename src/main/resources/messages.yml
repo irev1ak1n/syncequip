@@ -43,6 +43,7 @@ sequence:
   countdown-actionbar: '<gray>Equipping in <white><bold><seconds></bold></white>...'
   progress-actionbar: '<gray><bar> <white><piece>'
   completed-actionbar: '<green>Equipped <count>/<total>'
+  skipping: '<yellow>Nothing in your inventory fits <white><pieces></white>, so that will be skipped. The rest goes ahead.'
   completed-partial: '<yellow>Sequence finished: <count> of <total> pieces equipped (unavailable steps were skipped).'
   removed-before-start: '<yellow>You were removed from the sequence before anything was equipped (<reason>). Your inventory is unchanged.'
   interrupted: '<yellow>Sequence interrupted (<reason>): <count> of <total> pieces were equipped and stay on you; the rest are still in your inventory.'
@@ -151,13 +152,16 @@ help:
     loadout:
       title: 'Loadouts'
       lines:
+        - ' <white>/syncequip solo set \<slot> \<item|any|off></white> <gray>- choose what <white>/se solo</white> equips for you'
+        - ' <white>/syncequip solo show</white> <gray>and</gray> <white>reset</white> <gray>- see or restore your own loadout'
+        - ' <white>/syncequip group set [group] \<slot> \<item|any|off></white> <gray>- change one slot for a group (leader)'
+        - ' <white>/syncequip group show [group]</white> <gray>and</gray> <white>reset [group]</white> <gray>- see or restore it'
         - ' <white>/syncequip squad loadout show</white> <gray>- what each slot needs and the order'
         - ' <white>/syncequip squad loadout set \<slot> \<value> [optional]</white> <gray>- change one slot (leader)'
         - ' <white>/syncequip squad loadout optional \<slot> \<on|off></white> <gray>- skip the slot quietly when missing'
         - ' <white>/syncequip squad loadout order \<slot> ...</white> <gray>- these slots go first, the rest follow'
         - ' <white>/syncequip squad loadout reset</white> <gray>- back to the server default'
-        - ' <gray>Slots: <white>mainhand offhand helmet chestplate leggings boots</white>'
-        - ' <gray>Values: <white>any</white>, <white>none</white>, <white>any_sword</white> and <white>any_axe</white> (main hand), or an item such as <white>netherite_sword</white>, <white>totem_of_undying</white>, <white>netherite</white> (armor).'
+        - ' <gray>Slots: <white>mainhand offhand head chest legs feet</white> (or helmet, chestplate, leggings, boots). Values: <white>any</white>, <white>off</white>, <white>any_sword</white>/<white>any_axe</white> (main hand) or an item: any item in the hands, anything wearable elsewhere (<white>carved_pumpkin</white>, <white>elytra</white>, <white>netherite</white>).'
     demo:
       title: 'Demo mode'
       lines:
@@ -247,10 +251,14 @@ block:
 
 loadout:
   usage: '<red>Usage: /syncequip squad loadout \<show|reset|set|optional|order>'
-  usage-set: '<red>Usage: /syncequip squad loadout set \<mainhand|offhand|helmet|chestplate|leggings|boots> \<item|any|any_sword|none> [optional]'
+  usage-set: '<red>Usage: set \<mainhand|offhand|head|chest|legs|feet> \<item|any|off>. For example <white>/syncequip solo set head carved_pumpkin</white> or <white>/syncequip group set NULL chest elytra</white>.'
+  usage-solo: '<red>Usage: /syncequip solo \<set|show|reset>. For example <white>/syncequip solo set mainhand netherite_sword</white>.'
+  solo-reset: '<green>Your solo loadout is back to the server default.'
+  solo-busy: '<red>Wait until your running sequence has finished before changing your loadout.'
+  header-solo: '<gold>Solo loadout of <white><squad></white> <gray>(<source>)<gold>:'
   usage-optional: '<red>Usage: /syncequip squad loadout optional \<slot> \<on|off>'
   usage-order: '<red>Usage: /syncequip squad loadout order \<slot> \<slot> ... (any slots you leave out go last)'
-  unknown-slot: '<red><slot> is not a slot. Use mainhand, offhand, helmet, chestplate, leggings or boots.'
+  unknown-slot: '<red><slot> is not a slot. Use mainhand, offhand, head, chest, legs or feet.'
   invalid: '<red><reason>'
   set: '<green><slot> now needs: <white><value></white>'
   reset: '<green>Squad loadout is back to the default.'

@@ -14,7 +14,13 @@ public final class Loadout {
 
     private Loadout(Map<EquipmentStep, SlotRequirement> requirements, List<EquipmentStep> order) {
         this.requirements = requirements;
-        this.order = List.copyOf(order);
+        List<EquipmentStep> complete = new ArrayList<>(order);
+        for (EquipmentStep step : EquipmentStep.CANONICAL) {
+            if (!complete.contains(step)) {
+                complete.add(step);
+            }
+        }
+        this.order = List.copyOf(complete);
     }
 
     public static Loadout standard() {

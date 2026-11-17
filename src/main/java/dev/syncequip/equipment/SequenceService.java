@@ -39,7 +39,8 @@ public final class SequenceService implements SequenceCallbacks {
         UNEQUIP
     }
 
-    private record Context(SyncEquipSettings settings, Loadout loadout, Action action, boolean acceptExisting) {
+    private record Context(SyncEquipSettings settings, Loadout loadout, Action action, boolean acceptExisting,
+                            MissingItemPolicy policy) {
         String key(String base) {
             return (action == Action.UNEQUIP ? "unequip." : "sequence.") + base;
         }
@@ -53,13 +54,14 @@ public final class SequenceService implements SequenceCallbacks {
     private final EquipmentSoundManager sounds;
     private final MessageUtil messages;
     private final CooldownTracker cooldowns;
+    private final SoloLoadouts soloLoadouts;
     private final LongSupplier currentTick;
     private final Map<Long, Context> contexts = new HashMap<>();
 
     public SequenceService(Server server, Logger logger, TickSequenceScheduler scheduler,
                            Supplier<SyncEquipSettings> settings, EquipmentManager equipmentManager,
                            EquipmentSoundManager sounds, MessageUtil messages, CooldownTracker cooldowns,
-                           LongSupplier currentTick) {
+                           SoloLoadouts soloLoadouts, LongSupplier currentTick) {
         this.server = server;
         this.logger = logger;
         this.scheduler = scheduler;
@@ -68,29 +70,65 @@ public final class SequenceService implements SequenceCallbacks {
         this.sounds = sounds;
         this.messages = messages;
         this.cooldowns = cooldowns;
+        this.soloLoadouts = soloLoadouts;
         this.currentTick = currentTick;
     }
 
     public Optional<Component> checkReady(Player player, SyncEquipSettings config) {
-        return checkReady(player, config, config.soloLoadout(), config.soloUseDefaultLoadout(), false);
+        return checkReady(player, config, soloLoadoutOf(player, config), soloAcceptsExisting(player, config), false);
+    }
+
+    /** A player's own solo loadout wins over {@code loadout.solo-uses-default}. */
+    public Loadout soloLoadoutOf(Player player, SyncEquipSettings config) {
+        return soloLoadouts.get(player.getUniqueId()).orElseGet(config::soloLoadout);
+    }
+
+    /** Players who chose their own loadout skip slots they have no item for instead of being refused. */
+    private MissingItemPolicy soloPolicy(Player player, SyncEquipSettings config) {
+        return soloLoadouts.get(player.getUniqueId()).isPresent() ? MissingItemPolicy.SKIP : config.missingItemPolicy();
+    }
+
+    /** Tells a player which slots of their loadout will be left alone because nothing fits them. */
+    public void noteSkipped(Player player, SyncEquipSettings config, Loadout loadout, boolean acceptExisting,
+                            MissingItemPolicy policy) {
+        if (policy != MissingItemPolicy.SKIP) {
+            return;
+        }
+        InventoryValidator.Report report = InventoryValidator.validate(player, loadout, config.requireEmptySlots(),
+                acceptExisting);
+        List<EquipmentStep> left = new ArrayList<>(report.missing());
+        left.addAll(report.occupied());
+        left.addAll(report.conflicts());
+        if (!left.isEmpty()) {
+            messages.send(player, "sequence.skipping", ph("pieces", loadout.describe(left)));
+        }
+    }
+
+    private boolean soloAcceptsExisting(Player player, SyncEquipSettings config) {
+        return config.soloUseDefaultLoadout() || soloLoadouts.get(player.getUniqueId()).isPresent();
     }
 
     public Optional<Component> checkReady(Player player, SyncEquipSettings config, Loadout loadout,
                                           boolean acceptExisting, boolean requireWork) {
+        return checkReady(player, config, loadout, acceptExisting, requireWork, config.missingItemPolicy());
+    }
+
+    public Optional<Component> checkReady(Player player, SyncEquipSettings config, Loadout loadout,
+                                          boolean acceptExisting, boolean requireWork, MissingItemPolicy policy) {
         Optional<Component> basic = checkBasics(player);
         if (basic.isPresent()) {
             return basic;
         }
         InventoryValidator.Report report = InventoryValidator.validate(player, loadout, config.requireEmptySlots(),
                 acceptExisting);
-        if (report.acceptableFor(config.missingItemPolicy())) {
+        if (report.acceptableFor(policy)) {
             if (requireWork && report.available().isEmpty()) {
                 return Optional.of(messages.render("problem.nothing"));
             }
             return Optional.empty();
         }
         if (report.available().isEmpty() && report.satisfied().isEmpty()
-                && config.missingItemPolicy() == MissingItemPolicy.SKIP
+                && policy == MissingItemPolicy.SKIP
                 && report.missing().isEmpty() && report.occupied().isEmpty()) {
             return Optional.of(messages.render("problem.nothing"));
         }
@@ -149,39 +187,51 @@ public final class SequenceService implements SequenceCallbacks {
 
     public boolean startSolo(Player player) {
         SyncEquipSettings config = settings.get();
-        Optional<Component> problem = checkReady(player, config, config.soloLoadout(), config.soloUseDefaultLoadout(), true);
+        Loadout loadout = soloLoadoutOf(player, config);
+        boolean acceptExisting = soloAcceptsExisting(player, config);
+        MissingItemPolicy policy = soloPolicy(player, config);
+        Optional<Component> problem = checkReady(player, config, loadout, acceptExisting, true, policy);
         if (problem.isPresent()) {
             messages.send(player, "solo.cannot-start", ph("reason", problem.get()));
             return false;
         }
         startGroup(SyncSequence.Mode.SOLO, null, player, List.of(player), config.soloCountdownSeconds(), config,
-                config.soloLoadout(), Action.EQUIP, config.intervalTicks(), config.soloUseDefaultLoadout());
+                loadout, Action.EQUIP, config.intervalTicks(), acceptExisting, policy);
+        noteSkipped(player, config, loadout, acceptExisting, policy);
         return true;
     }
 
     public boolean startSoloUnequip(Player player) {
         SyncEquipSettings config = settings.get();
-        UnequipCheck check = checkUnequip(player, config.soloLoadout());
+        Loadout loadout = soloLoadoutOf(player, config);
+        UnequipCheck check = checkUnequip(player, loadout);
         if (!check.ready()) {
             Component reason = check.problem() != null ? check.problem() : messages.render("problem.nothing-to-remove");
             messages.send(player, "unequip.cannot-start", ph("reason", reason));
             return false;
         }
         startGroup(SyncSequence.Mode.SOLO, null, player, List.of(player), config.soloCountdownSeconds(), config,
-                config.soloLoadout(), Action.UNEQUIP, config.intervalTicks(), true);
+                loadout, Action.UNEQUIP, config.intervalTicks(), true);
         return true;
     }
 
     public SyncSequence startGroup(SyncSequence.Mode mode, UUID squadId, Player initiator, List<Player> players,
                                    int countdownSeconds, SyncEquipSettings config, Loadout loadout, Action action,
                                    int intervalTicks, boolean acceptExisting) {
+        return startGroup(mode, squadId, initiator, players, countdownSeconds, config, loadout, action, intervalTicks,
+                acceptExisting, config.missingItemPolicy());
+    }
+
+    public SyncSequence startGroup(SyncSequence.Mode mode, UUID squadId, Player initiator, List<Player> players,
+                                   int countdownSeconds, SyncEquipSettings config, Loadout loadout, Action action,
+                                   int intervalTicks, boolean acceptExisting, MissingItemPolicy policy) {
         List<EquipmentStep> steps = action == Action.EQUIP ? loadout.steps() : loadout.unequipSteps();
         SequenceTimeline timeline = new SequenceTimeline(countdownSeconds, intervalTicks, steps);
         long startTick = currentTick.getAsLong() + 1;
         List<UUID> ids = players.stream().map(Player::getUniqueId).toList();
         SyncSequence sequence = scheduler.schedule(mode, squadId, initiator.getUniqueId(), ids, timeline,
                 startTick, this);
-        contexts.put(sequence.id(), new Context(config, loadout, action, acceptExisting));
+        contexts.put(sequence.id(), new Context(config, loadout, action, acceptExisting, policy));
         for (Player player : players) {
             cooldowns.start(player.getUniqueId(), config.controls().cooldownSeconds());
         }
@@ -246,7 +296,7 @@ public final class SequenceService implements SequenceCallbacks {
             if (ctx.action() == Action.EQUIP) {
                 InventoryValidator.Report report = InventoryValidator.validate(player, ctx.loadout(),
                         config.requireEmptySlots(), ctx.acceptExisting());
-                if (!report.acceptableFor(config.missingItemPolicy())) {
+                if (!report.acceptableFor(ctx.policy())) {
                     sequence.removeParticipant(id, RemovalReason.ITEM_UNAVAILABLE);
                 }
             } else if (!InventoryValidator.unequipReport(player, ctx.loadout()).enoughRoom()) {
@@ -291,7 +341,7 @@ public final class SequenceService implements SequenceCallbacks {
                     sequence.removeParticipant(participant, RemovalReason.INVALID_STATE);
                     yield StepOutcome.SKIPPED;
                 }
-                case MISSING, OCCUPIED, CONFLICT -> !requirement.optional() && config.missingItemPolicy() == MissingItemPolicy.ABORT
+                case MISSING, OCCUPIED, CONFLICT -> !requirement.optional() && ctx.policy() == MissingItemPolicy.ABORT
                         ? StepOutcome.ABORTED : StepOutcome.SKIPPED;
             };
             if (moved.equipped()) {
@@ -415,7 +465,7 @@ public final class SequenceService implements SequenceCallbacks {
             return ctx;
         }
         SyncEquipSettings config = settings.get();
-        return new Context(config, config.soloLoadout(), Action.EQUIP, false);
+        return new Context(config, config.soloLoadout(), Action.EQUIP, false, config.missingItemPolicy());
     }
 
     private List<Player> onlineParticipants(SyncSequence sequence) {

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Loadouts are set in game for all six slots: `/se solo set|show|reset` for your own solo loadout and
+  `/se group set|show|reset [group]` for a group. Slots are `mainhand`, `offhand`, `head`, `chest`, `legs` and `feet`
+  (the old names still work). Hands take any item; armor slots accept whatever the game lets you wear there, such as a
+  carved pumpkin, player head or elytra. `/se group` is an alias of `/se squad`.
+- A personal solo loadout replaces `loadout.solo-uses-default`, is saved in `solo-loadouts.yml` and is separate from
+  group loadouts.
+- With a custom loadout, a slot with no matching item is skipped and named, and the rest of the sequence still runs.
+  Loadouts that were not customised keep the old behaviour.
 - Guided tour: each stage's title is shown first, and the demonstration starts only after it has faded out plus a short
   pause. The speed stage shows a title for each speed, then takes everyone's gear off and puts it on again at that speed.
 - The tour uses five test players by default (`demo.tour.bots`) and checks before every stage that all are online and in

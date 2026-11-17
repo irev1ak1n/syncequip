@@ -4,6 +4,7 @@ import static dev.syncequip.util.MessageUtil.ph;
 
 import dev.syncequip.config.SyncEquipSettings;
 import dev.syncequip.equipment.Loadout;
+import dev.syncequip.equipment.MissingItemPolicy;
 import dev.syncequip.equipment.SequenceService;
 import dev.syncequip.synchronization.FinishReason;
 import dev.syncequip.synchronization.SyncSequence;
@@ -85,6 +86,7 @@ public final class SquadSequenceController {
         SyncEquipSettings config = settings.get();
         Loadout loadout = squad.effectiveLoadout(config.defaultLoadout());
         int interval = squad.effectiveSpeed(config.intervalTicks());
+        MissingItemPolicy policy = config.missingItemPolicy();
 
         List<Player> members = new ArrayList<>();
         Map<String, Component> problems = new LinkedHashMap<>();
@@ -93,7 +95,7 @@ public final class SquadSequenceController {
             if (member == null) {
                 continue;
             }
-            sequences.checkReady(member, config, loadout, true, false).ifPresentOrElse(
+            sequences.checkReady(member, config, loadout, true, false, policy).ifPresentOrElse(
                     reason -> problems.put(member.getName(), reason),
                     () -> members.add(member));
         }
@@ -119,8 +121,9 @@ public final class SquadSequenceController {
         }
 
         sequences.startGroup(SyncSequence.Mode.SQUAD, squad.id(), requester, members, config.squadCountdownSeconds(),
-                config, loadout, SequenceService.Action.EQUIP, interval, true);
+                config, loadout, SequenceService.Action.EQUIP, interval, true, policy);
         for (Player member : members) {
+            sequences.noteSkipped(member, config, loadout, true, policy);
             messages.send(member, "squad.started", ph("leader", requester.getName()), ph("count", members.size()),
                     ph("ticks", interval));
         }

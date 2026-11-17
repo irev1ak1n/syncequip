@@ -114,8 +114,8 @@ public record SlotRequirement(Kind kind, Material material, boolean optional) {
         if (material == null) {
             return fail("'" + raw.trim() + "' is not an item I know.");
         }
-        if (!step.isHand() && !step.matches(material)) {
-            return fail(pretty(material) + " does not fit the " + step.displayName().toLowerCase(Locale.ROOT) + " slot.");
+        if (!step.canWear(material)) {
+            return fail(pretty(material) + " does not fit the " + step.slotWord() + " slot (it cannot be worn there).");
         }
         return ok(of(material));
     }

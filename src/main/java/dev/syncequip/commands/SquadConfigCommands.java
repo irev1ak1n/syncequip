@@ -27,7 +27,6 @@ import org.bukkit.entity.Player;
 
 /** Squad subcommands that configure a squad; leaders and administrators change things, members can look. */
 public final class SquadConfigCommands {
-    private static final List<String> SLOTS = List.of("mainhand", "offhand", "helmet", "chestplate", "leggings", "boots");
     private static final List<String> BLOCK_ACTIONS = List.of("set", "remove", "info", "enable", "disable");
     private static final List<String> COMMON_BLOCKS = List.of("here", "obsidian", "crying_obsidian", "gold_block",
             "diamond_block", "emerald_block", "netherite_block", "bedrock", "stone", "quartz_block");
@@ -126,11 +125,7 @@ public final class SquadConfigCommands {
     }
 
     private String describeSteps(Loadout loadout) {
-        List<String> parts = new ArrayList<>();
-        for (EquipmentStep step : loadout.steps()) {
-            parts.add(loadout.label(step) + (loadout.requirement(step).optional() ? "?" : ""));
-        }
-        return parts.isEmpty() ? "nothing" : String.join(" > ", parts);
+        return LoadoutCommands.describe(loadout);
     }
 
     private String blockSummary(SquadProfile profile) {
@@ -254,15 +249,21 @@ public final class SquadConfigCommands {
             messages().send(player, "loadout.usage");
             return;
         }
-        String action = args[2].toLowerCase(Locale.ROOT);
-        Target target = resolve(player, null, !action.equals("show"));
+        loadout(player, args[2].toLowerCase(Locale.ROOT), null, LoadoutCommands.rest(args, 3));
+    }
+
+    /** Runs one loadout action on the player's own squad, or on the named squad for administrators. */
+    public void loadout(Player player, String action, String group, String[] words) {
+        Target target = resolve(player, group, !action.equals("show"));
         if (target == null) {
             return;
         }
         SquadProfile profile = target.profile();
         Loadout current = profile.loadout() != null ? profile.loadout() : settings().defaultLoadout();
+        LoadoutCommands commands = plugin.loadoutCommands();
         switch (action) {
-            case "show" -> showLoadout(player, profile, current);
+            case "show" -> commands.show(player, "loadout.header", profile.name(),
+                    profile.loadout() != null ? "squad setting" : "default", current);
             case "reset" -> {
                 if (!busy(player, target)) {
                     squads().setLoadout(profile, null);
@@ -270,32 +271,16 @@ public final class SquadConfigCommands {
                 }
             }
             case "set" -> {
-                if (args.length < 5) {
-                    messages().send(player, "loadout.usage-set");
+                LoadoutCommands.Change change = commands.parseSet(player, current, words);
+                if (change == null || busy(player, target)) {
                     return;
                 }
-                Optional<EquipmentStep> step = EquipmentStep.parse(args[3]);
-                if (step.isEmpty()) {
-                    messages().send(player, "loadout.unknown-slot", ph("slot", args[3]));
-                    return;
-                }
-                SlotRequirement.Parsed parsed = SlotRequirement.parse(step.get(), args[4]);
-                if (!parsed.ok()) {
-                    messages().send(player, "loadout.invalid", ph("reason", parsed.error()));
-                    return;
-                }
-                if (busy(player, target)) {
-                    return;
-                }
-                boolean optional = (args.length > 5 && args[5].equalsIgnoreCase("optional"))
-                        || (args.length <= 5 && current.requirement(step.get()).optional());
-                squads().setLoadout(profile, current.with(step.get(), parsed.requirement().withOptional(optional)));
-                messages().send(player, "loadout.set", ph("slot", step.get().displayName()),
-                        ph("value", parsed.requirement().token()));
+                squads().setLoadout(profile, change.loadout());
+                commands.announce(player, change);
             }
             case "optional" -> {
-                Optional<EquipmentStep> step = args.length > 3 ? EquipmentStep.parse(args[3]) : Optional.empty();
-                Boolean on = args.length > 4 ? parseBoolean(args[4]) : null;
+                Optional<EquipmentStep> step = words.length > 0 ? EquipmentStep.parse(words[0]) : Optional.empty();
+                Boolean on = words.length > 1 ? parseBoolean(words[1]) : null;
                 if (step.isEmpty() || on == null) {
                     messages().send(player, "loadout.usage-optional");
                     return;
@@ -309,10 +294,10 @@ public final class SquadConfigCommands {
             }
             case "order" -> {
                 List<EquipmentStep> order = new ArrayList<>();
-                for (int i = 3; i < args.length; i++) {
-                    Optional<EquipmentStep> step = EquipmentStep.parse(args[i]);
+                for (String word : words) {
+                    Optional<EquipmentStep> step = EquipmentStep.parse(word);
                     if (step.isEmpty()) {
-                        messages().send(player, "loadout.unknown-slot", ph("slot", args[i]));
+                        messages().send(player, "loadout.unknown-slot", ph("slot", word));
                         return;
                     }
                     order.add(step.get());
@@ -326,21 +311,10 @@ public final class SquadConfigCommands {
                 }
                 Loadout updated = current.withOrder(order);
                 squads().setLoadout(profile, updated);
-                messages().send(player, "loadout.order-set", ph("steps", describeSteps(updated)));
+                messages().send(player, "loadout.order-set", ph("steps", LoadoutCommands.describe(updated)));
             }
             default -> messages().send(player, "loadout.usage");
         }
-    }
-
-    private void showLoadout(Player player, SquadProfile profile, Loadout loadout) {
-        messages().sendPlain(player, "loadout.header", ph("squad", profile.name()),
-                ph("source", profile.loadout() != null ? "squad setting" : "default"));
-        for (EquipmentStep step : loadout.order()) {
-            SlotRequirement req = loadout.requirement(step);
-            messages().sendPlain(player, "loadout.line", ph("slot", step.displayName().equals("Shield") ? "Offhand"
-                    : step.displayName()), ph("value", req.token()), ph("flags", req.optional() ? " (optional)" : ""));
-        }
-        messages().sendPlain(player, "loadout.order", ph("steps", describeSteps(loadout)));
     }
 
     private void disband(Player player, String nameArg) {
@@ -388,24 +362,36 @@ public final class SquadConfigCommands {
         }
         if (sub.equals("loadout")) {
             String action = args[2].toLowerCase(Locale.ROOT);
-            if (args.length == 4 && (action.equals("set") || action.equals("optional"))) {
-                return filter(SLOTS.stream(), args[3]);
+            if (action.equals("set")) {
+                return plugin.loadoutCommands().completeSet(args, 3, LoadoutCommands.LEGACY_SLOTS);
             }
-            if (action.equals("set") && args.length == 5) {
-                return filter(valuesFor(args[3], args[4]), args[4]);
-            }
-            if (action.equals("set") && args.length == 6) {
-                return filter(Stream.of("optional"), args[5]);
+            if (action.equals("optional") && args.length == 4) {
+                return filter(LoadoutCommands.LEGACY_SLOTS.stream(), args[3]);
             }
             if (action.equals("optional") && args.length == 5) {
                 return filter(Stream.of("on", "off"), args[4]);
             }
             if (action.equals("order") && args.length >= 4) {
-                return filter(SLOTS.stream().filter(s -> !List.of(args).subList(3, args.length - 1).contains(s)),
+                return filter(LoadoutCommands.LEGACY_SLOTS.stream().filter(s -> !List.of(args).subList(3, args.length - 1).contains(s)),
                         args[args.length - 1]);
             }
         }
         return List.of();
+    }
+
+    /** Completes {@code /syncequip group set|show|reset}, where the group name may be left out. */
+    public List<String> completeGroup(CommandSender sender, String[] args) {
+        String action = args[1].toLowerCase(Locale.ROOT);
+        Stream<String> groups = SquadSequenceController.isAdmin(sender) ? squadNames()
+                : sender instanceof Player p ? squads().squadOf(p.getUniqueId()).map(q -> q.name()).stream() : Stream.empty();
+        if (!action.equals("set")) {
+            return args.length == 3 ? filter(groups, args[2]) : List.of();
+        }
+        if (args.length == 3) {
+            return filter(Stream.concat(LoadoutCommands.SLOTS.stream(), groups), args[2]);
+        }
+        boolean slotFirst = EquipmentStep.parse(args[2]).isPresent();
+        return plugin.loadoutCommands().completeSet(args, slotFirst ? 2 : 3, LoadoutCommands.SLOTS);
     }
 
     private Stream<String> blockMaterials(String typed) {
@@ -424,30 +410,6 @@ public final class SquadConfigCommands {
 
     private Stream<String> squadNames() {
         return squads().profiles().stream().map(SquadProfile::name);
-    }
-
-    private Stream<String> valuesFor(String slotWord, String typed) {
-        Optional<EquipmentStep> step = EquipmentStep.parse(slotWord);
-        List<String> values = new ArrayList<>(List.of("none", "any"));
-        if (step.isEmpty()) {
-            return values.stream();
-        }
-        switch (step.get()) {
-            case MAIN_HAND -> values.addAll(List.of("any_sword", "any_axe", "netherite_sword", "diamond_sword",
-                    "iron_sword", "netherite_axe", "trident", "bow", "crossbow"));
-            case SHIELD -> values.addAll(List.of("shield", "totem_of_undying", "ender_pearl"));
-            default -> values.addAll(List.of("netherite", "diamond", "iron", "gold", "chainmail", "leather"));
-        }
-        if (typed.length() >= 2) {
-            String lower = typed.toLowerCase(Locale.ROOT);
-            Stream.of(Material.values())
-                    .filter(m -> !m.isLegacy() && m.isItem())
-                    .map(m -> m.name().toLowerCase(Locale.ROOT))
-                    .filter(name -> name.startsWith(lower) && (step.get().isHand() || step.get().matches(Material.matchMaterial(name))))
-                    .limit(40)
-                    .forEach(values::add);
-        }
-        return values.stream().distinct();
     }
 
     private static List<String> filter(Stream<String> options, String prefix) {
