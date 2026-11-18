@@ -205,8 +205,8 @@ class CustomLoadoutTest extends V11TestBase {
 
     @Test
     void groupSetChangesTheSquadLoadoutWithOrWithoutTheGroupName() {
-        PlayerMock leader = leaderWithSquad("Boss", "NULL");
-        run(leader, "group", "set", "NULL", "head", "netherite_helmet");
+        PlayerMock leader = leaderWithSquad("Boss", "TestGroup");
+        run(leader, "group", "set", "TestGroup", "head", "netherite_helmet");
         run(leader, "group", "set", "offhand", "totem_of_undying");
         Loadout loadout = plugin.squads().squadOf(leader.getUniqueId()).orElseThrow().profile().loadout();
         assertNotNull(loadout);
@@ -217,18 +217,18 @@ class CustomLoadoutTest extends V11TestBase {
 
     @Test
     void groupShowAndResetWork() {
-        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        PlayerMock leader = leaderWithSquad("Boss", "TestGroup");
         run(leader, "group", "set", "chest", "elytra");
         messages(leader);
         run(leader, "group", "show");
         assertTrue(received(leader, "elytra"));
-        run(leader, "group", "reset", "NULL");
+        run(leader, "group", "reset", "TestGroup");
         assertTrue(plugin.squads().squadOf(leader.getUniqueId()).orElseThrow().profile().loadout() == null);
     }
 
     @Test
     void groupWorksAsAnAliasAndSquadStillWorks() {
-        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        PlayerMock leader = leaderWithSquad("Boss", "TestGroup");
         run(leader, "squad", "loadout", "set", "helmet", "diamond_helmet");
         run(leader, "group", "loadout", "set", "boots", "diamond_boots");
         run(leader, "squad", "loadout", "set", "feet", "netherite_boots");
@@ -239,20 +239,20 @@ class CustomLoadoutTest extends V11TestBase {
 
     @Test
     void onlyTheLeaderOrAnAdminCanChangeAGroup() {
-        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        PlayerMock leader = leaderWithSquad("Boss", "TestGroup");
         PlayerMock member = playerWithKit("Member");
         run(leader, "squad", "invite", member.getName());
-        run(member, "squad", "join", "NULL");
+        run(member, "squad", "join", "TestGroup");
         messages(member);
         run(member, "group", "set", "head", "carved_pumpkin");
         assertTrue(received(member, "leader"));
         PlayerMock outsider = playerWithKit("Outsider");
         messages(outsider);
-        run(outsider, "group", "set", "NULL", "head", "carved_pumpkin");
-        assertTrue(received(outsider, "admin") || received(outsider, "NULL"));
+        run(outsider, "group", "set", "TestGroup", "head", "carved_pumpkin");
+        assertTrue(received(outsider, "admin") || received(outsider, "TestGroup"));
         assertTrue(plugin.squads().squadOf(leader.getUniqueId()).orElseThrow().profile().loadout() == null);
         outsider.setOp(true);
-        run(outsider, "group", "set", "NULL", "head", "carved_pumpkin");
+        run(outsider, "group", "set", "TestGroup", "head", "carved_pumpkin");
         assertEquals("carved_pumpkin",
                 plugin.squads().squadOf(leader.getUniqueId()).orElseThrow().profile().loadout()
                         .requirement(EquipmentStep.HELMET).token());
@@ -260,12 +260,12 @@ class CustomLoadoutTest extends V11TestBase {
 
     @Test
     void groupTabCompletionOffersSlotsAndGroupNames() {
-        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        PlayerMock leader = leaderWithSquad("Boss", "TestGroup");
         List<String> first = command.complete(leader, new String[] {"group", "set", ""});
-        assertTrue(first.containsAll(LoadoutCompletions.SLOTS) && first.contains("NULL"), first.toString());
-        List<String> afterGroup = command.complete(leader, new String[] {"group", "set", "NULL", ""});
+        assertTrue(first.containsAll(LoadoutCompletions.SLOTS) && first.contains("TestGroup"), first.toString());
+        List<String> afterGroup = command.complete(leader, new String[] {"group", "set", "TestGroup", ""});
         assertEquals(LoadoutCompletions.SLOTS, afterGroup);
-        List<String> items = command.complete(leader, new String[] {"group", "set", "NULL", "head", "carved"});
+        List<String> items = command.complete(leader, new String[] {"group", "set", "TestGroup", "head", "carved"});
         assertTrue(items.contains("carved_pumpkin"), items.toString());
         List<String> noGroup = command.complete(leader, new String[] {"group", "set", "chest", "el"});
         assertTrue(noGroup.contains("elytra"), noGroup.toString());
@@ -275,10 +275,10 @@ class CustomLoadoutTest extends V11TestBase {
 
     @Test
     void aGroupSequenceUsesTheGroupLoadoutAndItIsIndependentFromSolo() {
-        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        PlayerMock leader = leaderWithSquad("Boss", "TestGroup");
         PlayerMock member = playerWithKit("Member");
         run(leader, "squad", "invite", member.getName());
-        run(member, "squad", "join", "NULL");
+        run(member, "squad", "join", "TestGroup");
         run(leader, "group", "set", "head", "carved_pumpkin");
         run(leader, "group", "set", "chest", "elytra");
         for (PlayerMock p : List.of(leader, member)) {

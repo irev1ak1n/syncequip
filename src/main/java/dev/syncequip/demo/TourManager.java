@@ -27,16 +27,19 @@ import org.bukkit.scheduler.BukkitTask;
 /** Scripted walkthrough driven by test players through the ordinary commands. Everything it changes is put back by {@link #cleanup}. */
 public final class TourManager {
     public static final String CUE = "[SE-TOUR] ";
-    public static final String SQUAD = "NULL";
+    public static final String SQUAD = "TestGroup";
     private static final int DEFAULT_BOTS = 5;
     private static final int LINE_DISTANCE = 12;
     private static final int STRIP_START = 8;
     private static final int STRIP_DEPTH = 3;
-    private static final int FADE_IN = 250;
-    private static final int STAY = 2500;
-    private static final int FADE_OUT = 500;
-    /** The title is fully gone after this many ticks, then comes a short pause before the demonstration starts. */
-    private static final int INTRO_TICKS = (FADE_IN + STAY + FADE_OUT) / 50 + 15;
+    private static final int STAGES = 5;
+    private static final int FADE_IN = 100;
+    private static final int STAY = 400;
+    private static final int FADE_OUT = 200;
+    /** A title is on screen for 0.7 s and the stage's action starts the moment it is gone. */
+    private static final int INTRO_TICKS = (FADE_IN + STAY + FADE_OUT) / 50;
+    private static final int SLOW_SPEED = 10;
+    private static final int FAST_SPEED = 1;
     private static final int JOIN_TIMEOUT = 20 * 8;
     private static final int MISSING_TIMEOUT = 20 * 30;
     private static final double IN_PLACE = 1.5;
@@ -324,58 +327,52 @@ public final class TourManager {
         return bots.stream().noneMatch(b -> plugin.sequenceService().scheduler().isBusy(b.getUniqueId()));
     }
 
-    private void equipAndWait(String title, String subtitle, int hold) {
-        addAndWait(title, subtitle, () -> run("squad start"), this::idle, hold, SEQUENCE_TIMEOUT);
+    /** The tour starts its sequences straight away; the configured countdown is for real players. */
+    private void equipAndWait(String title, String subtitle, int hold, Runnable before) {
+        addAndWait(title, subtitle, () -> {
+            before.run();
+            plugin.squadController().start(leader(), 0);
+        }, this::idle, hold, SEQUENCE_TIMEOUT);
     }
 
-    private void unequipAndWait(String title, String subtitle, int hold) {
-        addAndWait(title, subtitle, () -> run("squad unequip"), this::idle, hold, SEQUENCE_TIMEOUT);
+    private void unequipAndWait(String title, String subtitle, int hold, Runnable before) {
+        addAndWait(title, subtitle, () -> {
+            before.run();
+            plugin.squadController().unequip(leader(), 0);
+        }, this::idle, hold, SEQUENCE_TIMEOUT);
     }
 
     private void buildSteps() {
-        int total = 8;
-        add(stageTitle(1, total, "Formation"), bots.size() + " test players line up", this::formUp, 0);
-        addAndWait("", "", () -> { }, this::inPlace, 60, 60);
+        Runnable nothing = () -> { };
+        add("Squad Formation", subtitle(1, bots.size() + " test players line up"), this::formUp, 0);
+        addAndWait("", "", nothing, this::inPlace, 8, 60);
 
-        add(stageTitle(2, total, "Join block"), "Step on obsidian to join " + SQUAD, this::prepareJoining, 30);
+        add("Block Join", subtitle(2, "Obsidian joins " + SQUAD), this::prepareJoining, 0);
         addAndWait("", "", () -> sendWalkCue(bots), this::allArrived, 0, JOIN_TIMEOUT);
         add("", "", this::retryWalkers, 0);
-        addAndWait("", "", () -> { }, this::allArrived, 0, 100);
-        add("", "", this::placeStragglers, 40);
+        addAndWait("", "", nothing, this::allArrived, 0, 100);
+        add("", "", this::placeStragglers, 6);
 
-        equipAndWait(stageTitle(3, total, "Sync Equip"), "Armor, sword and shield in sync", 50);
+        equipAndWait("Synchronized Equip", subtitle(3, "Armor, sword and shield"), 26, nothing);
 
-        for (int speed : new int[] {1, 2, 4, 6}) {
-            String unit = speed == 1 ? "tick" : "ticks";
-            addAndWait(stageTitle(4, total, "Speed " + speed), "Off, then on, " + speed + " " + unit + " a piece",
-                    () -> {
-                        run("squad speed " + speed);
-                        run("squad unequip");
-                    }, this::idle, 30, SEQUENCE_TIMEOUT);
-            equipAndWait("", "", 50);
-        }
-        add("", "", () -> run("squad speed default"), 5);
+        unequipAndWait("Speed Control", subtitle(4, "Slow: " + pace(SLOW_SPEED)), 6,
+                () -> run("squad speed " + SLOW_SPEED));
+        equipAndWait("Speed Control", subtitle(4, "Fast: " + pace(FAST_SPEED)), 24,
+                () -> run("squad speed " + FAST_SPEED));
 
-        unequipAndWait(stageTitle(5, total, "Loadout"), "Totem, axe and no helmet", 30);
-        add("", "", this::customLoadout, 10);
-        equipAndWait("", "", 60);
-
-        unequipAndWait(stageTitle(6, total, "Unequip"), "Everyone takes gear off together", 40);
-        add("", "", () -> run("squad loadout reset"), 10);
-
-        add(stageTitle(7, total, "Swapping"), "Axe, pickaxe, totem, old boots", this::awkwardInventories, 50);
-        equipAndWait("", "", 60);
-
-        unequipAndWait(stageTitle(8, total, "Finale"), "One last full equip, in step", 30);
-        add("", "", () -> {
-            run("squad loadout reset");
-            giveKits();
-        }, 10);
-        equipAndWait("", "", 100);
+        unequipAndWait("Custom Loadout", subtitle(5, "Axe, totem, no helmet"), 4,
+                () -> run("squad speed default"));
+        add("", "", this::customLoadout, 4);
+        equipAndWait("", "", 36, nothing);
+        unequipAndWait("", "", 14, nothing);
     }
 
-    private static String stageTitle(int number, int total, String name) {
-        return number + "/" + total + " — " + name;
+    private static String pace(int ticks) {
+        return ticks + (ticks == 1 ? " tick" : " ticks") + " per piece";
+    }
+
+    private static String subtitle(int number, String text) {
+        return number + "/" + STAGES + " · " + text;
     }
 
     private void formUp() {
@@ -492,28 +489,6 @@ public final class TourManager {
         run("squad loadout set offhand totem_of_undying");
         run("squad loadout set mainhand any_axe");
         run("squad loadout set helmet none");
-    }
-
-    private void awkwardInventories() {
-        run("squad loadout set boots netherite");
-        for (int i = 0; i < bots.size(); i++) {
-            Player bot = bots.get(i);
-            giveKit(bot);
-            PlayerInventory inv = bot.getInventory();
-            switch (i % 4) {
-                case 0 -> {
-                    inv.setItem(0, new ItemStack(Material.NETHERITE_AXE));
-                    inv.setItem(4, new ItemStack(Material.NETHERITE_SWORD));
-                }
-                case 1 -> {
-                    inv.setItem(20, new ItemStack(Material.NETHERITE_SWORD));
-                    inv.setItem(0, new ItemStack(Material.NETHERITE_PICKAXE));
-                }
-                case 2 -> inv.setItemInOffHand(new ItemStack(Material.TOTEM_OF_UNDYING));
-                default -> inv.setBoots(new ItemStack(Material.LEATHER_BOOTS));
-            }
-            inv.setHeldItemSlot(0);
-        }
     }
 
     private void giveKits() {

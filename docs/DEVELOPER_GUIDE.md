@@ -43,7 +43,7 @@ Keep test servers outside this repository.
 
 ## Guided tour (5 test players)
 
-`/se demo tour` plays an eight-stage walkthrough with five Mineflayer test players on an isolated, localhost-only
+`/se demo tour` plays a 19 second, five-stage walkthrough with five Mineflayer test players on an isolated, localhost-only
 offline-mode server (never your real server). From the `bot-test` folder:
 
 ```
@@ -51,8 +51,11 @@ start-tour.bat YourMinecraftName
 ```
 
 Then join `localhost:25599` with your own client (Minecraft 26.3), face a flat open area and type `/se demo tour`.
-Controls: `/se demo tour pause|resume|restart|stop`. Each stage shows its title, waits for it to fade out plus a short
-pause, and only then starts. The tour needs exactly the configured number of bots (`demo.tour.bots`, default 5). It
+The stages are Squad Formation, Block Join (the bots walk onto the obsidian and join the `TestGroup` squad),
+Synchronized Equip, Speed Control (one slow unequip, one fast equip, with the delay per piece shown) and Custom Loadout
+(axe, totem, no helmet, then one synchronized unequip).
+Controls: `/se demo tour pause|resume|restart|stop`. Each title is on screen for 0.7 seconds and its action starts right
+after it, with no countdown. The tour needs exactly the configured number of bots (`demo.tour.bots`, default 5). It
 checks before every stage that all five are online and in place, and moves or re-sends a bot that isn't.
 
 ## Releasing

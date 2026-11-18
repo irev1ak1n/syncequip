@@ -10,8 +10,11 @@
   group loadouts.
 - With a custom loadout, a slot with no matching item is skipped and named, and the rest of the sequence still runs.
   Loadouts that were not customised keep the old behaviour.
-- Guided tour: each stage's title is shown first, and the demonstration starts only after it has faded out plus a short
-  pause. The speed stage shows a title for each speed, then takes everyone's gear off and puts it on again at that speed.
+- Guided tour: now about 19 seconds in five stages (Squad Formation, Block Join, Synchronized Equip, Speed Control,
+  Custom Loadout). Each title is on screen for under a second and the action starts right after it. Speed Control shows
+  one slow unequip (10 ticks a piece) and one fast equip (1 tick a piece); Custom Loadout switches to axe, totem and no
+  helmet and ends with one synchronized unequip. The tour's sequences start without the usual countdown.
+- The tour's demo squad is now called `TestGroup` (it was `NULL`).
 - The tour uses five test players by default (`demo.tour.bots`) and checks before every stage that all are online and in
   place. All five, the leader included, walk onto the obsidian; a bot that does not is sent again, then placed, and the
   viewer is told.

@@ -20,8 +20,8 @@ the top inventory row, and nothing worn. Keep slot 1 selected.
 
 ## v1.1 squad features (two or more players)
 
-- [ ] Leader: `/se squad create NULL`, then `/se squad block set obsidian` (or stand on obsidian and run `/se squad block set`)
-- [ ] A friend walks onto an obsidian block and sees "You joined squad NULL" (once, no spam)
+- [ ] Leader: `/se squad create TestGroup`, then `/se squad block set obsidian` (or stand on obsidian and run `/se squad block set`)
+- [ ] A friend walks onto an obsidian block and sees "You joined squad TestGroup" (once, no spam)
 - [ ] A second friend walks onto a **different** obsidian block somewhere else and joins the same squad
 - [ ] Place a new obsidian block and step on it: it works too. Stone or gold does nothing
 - [ ] `/se squad block info` shows obsidian and the world. `block disable` stops joining, `block enable` restores it
@@ -32,7 +32,7 @@ the top inventory row, and nothing worn. Keep slot 1 selected.
 - [ ] `/se squad loadout set offhand totem_of_undying` (give totems first): the totem goes to the offhand instead of the shield
 - [ ] `/se squad loadout set helmet none` then start: no helmet step happens
 - [ ] `/se squad loadout reset` goes back to the default
-- [ ] Restart the server, `/se squad create NULL` again: the speed, loadout and joining block come back
+- [ ] Restart the server, `/se squad create TestGroup` again: the speed, loadout and joining block come back
 
 ## Solo
 

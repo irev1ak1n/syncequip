@@ -92,7 +92,7 @@ class ReliabilityTest extends V11TestBase {
 
     @Test
     void aHeldHelmetAndASwordInTheInventoryWorkInASquad() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         PlayerMock p = squad.get(1);
         PlayerInventory inv = bare(p);
         fullIronKitExceptHelmet(inv);
@@ -113,7 +113,7 @@ class ReliabilityTest extends V11TestBase {
     @Test
     void thePreCheckAndTheExecutionAgreeWhenTheHandsFreeUpDuringTheSequence() {
         // The hand holds a helmet and the offhand a torch. Nothing is "occupied" once the earlier steps have run.
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         PlayerInventory inv = bare(p);
         fullIronKitExceptHelmet(inv);
@@ -128,7 +128,7 @@ class ReliabilityTest extends V11TestBase {
 
     @Test
     void oneItemNeededByTwoSlotsIsReportedAsAConflictNotAsMissing() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock leader = squad.get(0);
         run(leader, "squad", "loadout", "set", "mainhand", "shield");
         PlayerMock p = squad.get(1);
@@ -149,7 +149,7 @@ class ReliabilityTest extends V11TestBase {
 
     @Test
     void aTrulyMissingItemIsStillReportedMissing() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         p.getInventory().setItem(12, null);
         run(squad.get(0), "squad", "start");
@@ -160,7 +160,7 @@ class ReliabilityTest extends V11TestBase {
 
     @Test
     void axeAndTotemLoadoutMovesBothIntoTheHands() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         run(squad.get(0), "squad", "loadout", "set", "mainhand", "any_axe");
         run(squad.get(0), "squad", "loadout", "set", "offhand", "totem_of_undying");
         for (PlayerMock p : squad) {
@@ -183,7 +183,7 @@ class ReliabilityTest extends V11TestBase {
 
     @Test
     void aSwordInTheOffhandIsSwappedIntoTheMainHandAndTheShieldTakesItsPlace() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         PlayerInventory inv = bare(p);
         inv.setItem(9, new ItemStack(Material.IRON_BOOTS));
@@ -202,7 +202,7 @@ class ReliabilityTest extends V11TestBase {
 
     @Test
     void anOccupiedOffhandIsSwappedAndTheOldItemGoesBackToTheInventory() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         p.getInventory().setItemInOffHand(new ItemStack(Material.TORCH, 8));
         int before = totalItems(p);
@@ -283,7 +283,7 @@ class ReliabilityTest extends V11TestBase {
 
     @Test
     void anItemMovedToAnotherSlotMidSequenceIsStillFound() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         run(squad.get(0), "squad", "start");
         tick(3);
@@ -297,7 +297,7 @@ class ReliabilityTest extends V11TestBase {
 
     @Test
     void anItemMovedIntoTheHandMidSequenceIsStillFound() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         run(squad.get(0), "squad", "start");
         tick(3);
@@ -312,7 +312,7 @@ class ReliabilityTest extends V11TestBase {
 
     @Test
     void equippingAndUnequippingRepeatedlyKeepsEveryItemExactly() {
-        List<PlayerMock> squad = formSquad("NULL", 4);
+        List<PlayerMock> squad = formSquad("TestGroup", 4);
         ItemStack helmet = new ItemStack(Material.IRON_HELMET);
         helmet.addUnsafeEnchantment(Enchantment.UNBREAKING, 3);
         squad.get(1).getInventory().setItem(12, helmet.clone());
@@ -333,7 +333,7 @@ class ReliabilityTest extends V11TestBase {
 
     @Test
     void changingLoadoutAndSpeedBetweenRunsStillKeepsEveryoneInSync() {
-        List<PlayerMock> squad = formSquad("NULL", 6);
+        List<PlayerMock> squad = formSquad("TestGroup", 6);
         run(squad.get(0), "squad", "speed", "1");
         run(squad.get(0), "squad", "start");
         tick(60);
@@ -351,7 +351,7 @@ class ReliabilityTest extends V11TestBase {
 
     @Test
     void disconnectingWithAHeldHelmetMidSequenceLeavesAConsistentInventory() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         PlayerMock p = squad.get(1);
         PlayerInventory inv = bare(p);
         fullIronKitExceptHelmet(inv);
@@ -393,7 +393,7 @@ class ReliabilityTest extends V11TestBase {
         solo(solo);
         assertEquals(5, countEquipped(solo));
 
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         run(squad.get(0), "squad", "start");
         tick(60);
         assertTrue(squad.stream().allMatch(p -> countEquipped(p) == 5));

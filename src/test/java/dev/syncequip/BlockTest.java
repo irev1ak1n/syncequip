@@ -41,7 +41,7 @@ class BlockTest extends V11TestBase {
 
     @Test
     void obsidianAtManyDifferentCoordinatesJoinsTheSameSquad() {
-        PlayerMock leader = leaderOf("NULL", "obsidian");
+        PlayerMock leader = leaderOf("TestGroup", "obsidian");
         assertTrue(received(leader, "is now obsidian"));
         int[][] spots = {{10, 64, 10}, {-300, 70, 45}, {5000, 12, -77}, {0, 64, 0}, {123, 100, 456}};
         List<PlayerMock> walkers = new ArrayList<>();
@@ -50,17 +50,17 @@ class BlockTest extends V11TestBase {
             walkers.add(walker);
             stepOn(walker, put(Material.OBSIDIAN, spots[i][0], spots[i][1], spots[i][2]));
         }
-        assertTrue(walkers.stream().allMatch(w -> isMemberOf(w, "NULL")));
-        assertEquals(walkers.size() + 1, plugin.squads().squadByName("NULL").orElseThrow().size());
+        assertTrue(walkers.stream().allMatch(w -> isMemberOf(w, "TestGroup")));
+        assertEquals(walkers.size() + 1, plugin.squads().squadByName("TestGroup").orElseThrow().size());
     }
 
     @Test
     void theJoinMessageIsShortAndComesOnce() {
-        leaderOf("NULL", "obsidian");
+        leaderOf("TestGroup", "obsidian");
         PlayerMock walker = server.addPlayer("Walker");
         Block obsidian = put(Material.OBSIDIAN, 3, 64, 3);
         stepOn(walker, obsidian);
-        assertEquals(1, messages(walker).stream().filter(m -> m.contains("You joined squad NULL")).count());
+        assertEquals(1, messages(walker).stream().filter(m -> m.contains("You joined squad TestGroup")).count());
         stepOn(walker, obsidian);
         stepOn(walker, put(Material.OBSIDIAN, 4, 64, 3));
         assertTrue(messages(walker).isEmpty(), "no repeats once a member");
@@ -68,24 +68,24 @@ class BlockTest extends V11TestBase {
 
     @Test
     void blocksPlacedAfterTheSquadWasConfiguredWorkToo() {
-        leaderOf("NULL", "obsidian");
+        leaderOf("TestGroup", "obsidian");
         PlayerMock early = server.addPlayer("Early");
         stepOn(early, put(Material.OBSIDIAN, 1, 64, 1));
-        assertTrue(isMemberOf(early, "NULL"));
+        assertTrue(isMemberOf(early, "TestGroup"));
         PlayerMock late = server.addPlayer("Late");
         Block fresh = put(Material.OBSIDIAN, 9000, 64, 9000);
         stepOn(late, fresh);
-        assertTrue(isMemberOf(late, "NULL"));
+        assertTrue(isMemberOf(late, "TestGroup"));
     }
 
     @Test
     void otherMaterialsDoNothingAndSoDoesAirUnderTheFeet() {
-        leaderOf("NULL", "obsidian");
+        leaderOf("TestGroup", "obsidian");
         PlayerMock walker = server.addPlayer("Walker");
         stepOn(walker, put(Material.STONE, 5, 64, 5));
         stepOn(walker, put(Material.CRYING_OBSIDIAN, 6, 64, 5));
         stepOn(walker, put(Material.GOLD_BLOCK, 7, 64, 5));
-        assertFalse(isMemberOf(walker, "NULL"));
+        assertFalse(isMemberOf(walker, "TestGroup"));
     }
 
     @Test
@@ -100,42 +100,42 @@ class BlockTest extends V11TestBase {
 
     @Test
     void notSolidOrUnknownMaterialsAreRefusedWithAReason() {
-        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        PlayerMock leader = leaderWithSquad("Boss", "TestGroup");
         for (String bad : new String[]{"water", "air", "torch", "banana", "diamond_sword"}) {
             run(leader, "squad", "block", "set", bad);
             List<String> out = messages(leader);
             assertTrue(out.stream().anyMatch(m -> m.contains("not a") || m.contains("is not")), bad + " -> " + out);
         }
-        assertNull(plugin.squads().profile("NULL").orElseThrow().blockMaterial());
+        assertNull(plugin.squads().profile("TestGroup").orElseThrow().blockMaterial());
     }
 
     @Test
     void settingWithoutAnArgumentUsesTheBlockUnderTheLeader() {
-        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        PlayerMock leader = leaderWithSquad("Boss", "TestGroup");
         Block under = put(Material.EMERALD_BLOCK, 20, 64, 20);
         leader.teleport(standingOn(under));
         run(leader, "squad", "block", "set");
-        assertEquals(Material.EMERALD_BLOCK, plugin.squads().profile("NULL").orElseThrow().blockMaterial());
+        assertEquals(Material.EMERALD_BLOCK, plugin.squads().profile("TestGroup").orElseThrow().blockMaterial());
         PlayerMock walker = server.addPlayer("Walker");
         stepOn(walker, put(Material.EMERALD_BLOCK, -40, 80, 12));
-        assertTrue(isMemberOf(walker, "NULL"));
+        assertTrue(isMemberOf(walker, "TestGroup"));
 
         run(leader, "squad", "block", "set", "here");
-        assertEquals(Material.EMERALD_BLOCK, plugin.squads().profile("NULL").orElseThrow().blockMaterial());
+        assertEquals(Material.EMERALD_BLOCK, plugin.squads().profile("TestGroup").orElseThrow().blockMaterial());
     }
 
     @Test
     void standingInTheAirWithNothingSolidUnderIsRefused() {
-        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        PlayerMock leader = leaderWithSquad("Boss", "TestGroup");
         leader.teleport(new Location(world, 50.5, 120, 50.5));
         run(leader, "squad", "block", "set");
         assertTrue(received(leader, "not a solid block"));
-        assertNull(plugin.squads().profile("NULL").orElseThrow().blockMaterial());
+        assertNull(plugin.squads().profile("TestGroup").orElseThrow().blockMaterial());
     }
 
     @Test
     void landingOnTheBlockWithoutLeavingTheBlockColumnStillCounts() {
-        leaderOf("NULL", "obsidian");
+        leaderOf("TestGroup", "obsidian");
         PlayerMock walker = server.addPlayer("Jumper");
         Block obsidian = put(Material.OBSIDIAN, 8, 64, 8);
         Location air = new Location(world, 8.5, 65.4, 8.5);
@@ -143,7 +143,7 @@ class BlockTest extends V11TestBase {
         PlayerMoveEvent event = new PlayerMoveEvent(walker, air, ground);
         assertFalse(event.hasChangedBlock());
         server.getPluginManager().callEvent(event);
-        assertTrue(isMemberOf(walker, "NULL"));
+        assertTrue(isMemberOf(walker, "TestGroup"));
         assertEquals(Material.OBSIDIAN, obsidian.getType());
     }
 
@@ -179,13 +179,13 @@ class BlockTest extends V11TestBase {
 
     @Test
     void aSquadCanChangeItsMaterialAndTheOldOneStopsWorking() {
-        PlayerMock leader = leaderOf("NULL", "obsidian");
+        PlayerMock leader = leaderOf("TestGroup", "obsidian");
         run(leader, "squad", "block", "set", "gold_block");
         PlayerMock walker = server.addPlayer("Walker");
         stepOn(walker, put(Material.OBSIDIAN, 1, 64, 1));
-        assertFalse(isMemberOf(walker, "NULL"));
+        assertFalse(isMemberOf(walker, "TestGroup"));
         stepOn(walker, put(Material.GOLD_BLOCK, 2, 64, 2));
-        assertTrue(isMemberOf(walker, "NULL"));
+        assertTrue(isMemberOf(walker, "TestGroup"));
         run(leader, "squad", "block", "set", "obsidian");
         PlayerMock other = leaderWithSquad("Other", "BBB");
         run(other, "squad", "block", "set", "gold_block");
@@ -195,27 +195,27 @@ class BlockTest extends V11TestBase {
 
     @Test
     void theRuleOnlyAppliesInTheWorldWhereItWasSetByDefault() {
-        leaderOf("NULL", "obsidian");
+        leaderOf("TestGroup", "obsidian");
         World other = server.addSimpleWorld("other");
         PlayerMock walker = server.addPlayer("Walker");
         Block there = other.getBlockAt(5, 64, 5);
         there.setType(Material.OBSIDIAN);
         stepOn(walker, there);
-        assertFalse(isMemberOf(walker, "NULL"));
+        assertFalse(isMemberOf(walker, "TestGroup"));
         stepOn(walker, put(Material.OBSIDIAN, 5, 64, 5));
-        assertTrue(isMemberOf(walker, "NULL"));
+        assertTrue(isMemberOf(walker, "TestGroup"));
     }
 
     @Test
     void theAllWorldsSettingMakesTheMaterialWorkEverywhere() {
         setConfig("blocks.all-worlds", true);
-        leaderOf("NULL", "obsidian");
+        leaderOf("TestGroup", "obsidian");
         World other = server.addSimpleWorld("other");
         PlayerMock walker = server.addPlayer("Walker");
         Block there = other.getBlockAt(5, 64, 5);
         there.setType(Material.OBSIDIAN);
         stepOn(walker, there);
-        assertTrue(isMemberOf(walker, "NULL"));
+        assertTrue(isMemberOf(walker, "TestGroup"));
     }
 
     @Test
@@ -239,7 +239,7 @@ class BlockTest extends V11TestBase {
 
     @Test
     void membersCannotConfigureButCanLook() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         run(squad.get(1), "squad", "block", "set", "obsidian");
         assertTrue(received(squad.get(1), "Only the squad leader"));
         run(squad.get(0), "squad", "block", "set", "obsidian");
@@ -249,68 +249,68 @@ class BlockTest extends V11TestBase {
 
     @Test
     void adminsConfigureOtherSquadsAndNormalPlayersCannot() {
-        leaderWithSquad("Boss", "NULL");
+        leaderWithSquad("Boss", "TestGroup");
         PlayerMock admin = server.addPlayer("Admin");
         admin.setOp(true);
-        run(admin, "squad", "block", "set", "obsidian", "NULL");
-        assertEquals(Material.OBSIDIAN, plugin.squads().profile("NULL").orElseThrow().blockMaterial());
-        run(admin, "squad", "block", "info", "NULL");
+        run(admin, "squad", "block", "set", "obsidian", "TestGroup");
+        assertEquals(Material.OBSIDIAN, plugin.squads().profile("TestGroup").orElseThrow().blockMaterial());
+        run(admin, "squad", "block", "info", "TestGroup");
         assertTrue(received(admin, "obsidian in world"));
-        run(admin, "squad", "block", "disable", "NULL");
-        assertFalse(plugin.squads().profile("NULL").orElseThrow().blockEnabled());
-        run(admin, "squad", "block", "remove", "NULL");
-        assertNull(plugin.squads().profile("NULL").orElseThrow().blockMaterial());
+        run(admin, "squad", "block", "disable", "TestGroup");
+        assertFalse(plugin.squads().profile("TestGroup").orElseThrow().blockEnabled());
+        run(admin, "squad", "block", "remove", "TestGroup");
+        assertNull(plugin.squads().profile("TestGroup").orElseThrow().blockMaterial());
 
         PlayerMock other = leaderWithSquad("Other", "BBB");
-        run(other, "squad", "block", "set", "gold_block", "NULL");
+        run(other, "squad", "block", "set", "gold_block", "TestGroup");
         assertTrue(received(other, "administrator"));
     }
 
     @Test
     void enableDisableAndRemove() {
-        PlayerMock leader = leaderOf("NULL", "obsidian");
+        PlayerMock leader = leaderOf("TestGroup", "obsidian");
         PlayerMock walker = server.addPlayer("Walker");
         Block obsidian = put(Material.OBSIDIAN, 1, 64, 1);
         run(leader, "squad", "block", "disable");
         stepOn(walker, obsidian);
-        assertFalse(isMemberOf(walker, "NULL"));
+        assertFalse(isMemberOf(walker, "TestGroup"));
         run(leader, "squad", "block", "enable");
         stepOn(walker, obsidian);
-        assertTrue(isMemberOf(walker, "NULL"));
+        assertTrue(isMemberOf(walker, "TestGroup"));
 
         run(walker, "squad", "leave");
         run(leader, "squad", "block", "remove");
         assertTrue(received(leader, "Removed the joining block"));
         stepOn(walker, obsidian);
-        assertFalse(isMemberOf(walker, "NULL"));
+        assertFalse(isMemberOf(walker, "TestGroup"));
         run(leader, "squad", "block", "info");
         assertTrue(received(leader, "has no joining block"));
     }
 
     @Test
     void joiningIsOnRightAfterSettingTheMaterialWithoutEnable() {
-        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        PlayerMock leader = leaderWithSquad("Boss", "TestGroup");
         run(leader, "squad", "block", "set", "obsidian");
-        assertTrue(plugin.squads().profile("NULL").orElseThrow().blockEnabled());
+        assertTrue(plugin.squads().profile("TestGroup").orElseThrow().blockEnabled());
         PlayerMock walker = server.addPlayer("Walker");
         stepOn(walker, put(Material.OBSIDIAN, 1, 64, 1));
-        assertTrue(isMemberOf(walker, "NULL"), "no enable command and no key press needed");
+        assertTrue(isMemberOf(walker, "TestGroup"), "no enable command and no key press needed");
     }
 
     @Test
     void settingANewMaterialTurnsJoiningBackOn() {
-        PlayerMock leader = leaderOf("NULL", "obsidian");
+        PlayerMock leader = leaderOf("TestGroup", "obsidian");
         run(leader, "squad", "block", "disable");
         run(leader, "squad", "block", "set", "gold_block");
-        assertTrue(plugin.squads().profile("NULL").orElseThrow().blockEnabled());
+        assertTrue(plugin.squads().profile("TestGroup").orElseThrow().blockEnabled());
         PlayerMock walker = server.addPlayer("Walker");
         stepOn(walker, put(Material.GOLD_BLOCK, 2, 64, 2));
-        assertTrue(isMemberOf(walker, "NULL"));
+        assertTrue(isMemberOf(walker, "TestGroup"));
     }
 
     @Test
     void playersAlreadyStandingOnTheBlockJoinWhenItIsAssignedOrEnabled() {
-        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        PlayerMock leader = leaderWithSquad("Boss", "TestGroup");
         PlayerMock standing = server.addPlayer("Standing");
         PlayerMock elsewhere = server.addPlayer("Elsewhere");
         standing.teleport(standingOn(put(Material.OBSIDIAN, 5, 64, 5)));
@@ -318,48 +318,48 @@ class BlockTest extends V11TestBase {
 
         run(leader, "squad", "block", "set", "obsidian");
 
-        assertTrue(isMemberOf(standing, "NULL"), "already on obsidian, so they join without moving");
-        assertFalse(isMemberOf(elsewhere, "NULL"));
-        assertEquals(1, messages(standing).stream().filter(m -> m.contains("You joined squad NULL")).count());
+        assertTrue(isMemberOf(standing, "TestGroup"), "already on obsidian, so they join without moving");
+        assertFalse(isMemberOf(elsewhere, "TestGroup"));
+        assertEquals(1, messages(standing).stream().filter(m -> m.contains("You joined squad TestGroup")).count());
 
         run(standing, "squad", "leave");
         run(leader, "squad", "block", "disable");
         run(leader, "squad", "block", "enable");
-        assertTrue(isMemberOf(standing, "NULL"), "enabling also picks up players standing on it");
+        assertTrue(isMemberOf(standing, "TestGroup"), "enabling also picks up players standing on it");
     }
 
     @Test
     void anAdminSettingTheBlockWhileStandingOnItDoesNotJoinTheSquad() {
-        leaderWithSquad("Boss", "NULL");
+        leaderWithSquad("Boss", "TestGroup");
         PlayerMock admin = server.addPlayer("Admin");
         admin.setOp(true);
         admin.teleport(standingOn(put(Material.OBSIDIAN, 5, 64, 5)));
-        run(admin, "squad", "block", "set", "obsidian", "NULL");
-        assertFalse(isMemberOf(admin, "NULL"));
+        run(admin, "squad", "block", "set", "obsidian", "TestGroup");
+        assertFalse(isMemberOf(admin, "TestGroup"));
     }
 
     @Test
     void theWholeFeatureCanBeSwitchedOffInTheConfig() {
-        leaderOf("NULL", "obsidian");
+        leaderOf("TestGroup", "obsidian");
         setConfig("blocks.enabled", false);
         PlayerMock walker = server.addPlayer("Walker");
         stepOn(walker, put(Material.OBSIDIAN, 1, 64, 1));
-        assertFalse(isMemberOf(walker, "NULL"));
+        assertFalse(isMemberOf(walker, "TestGroup"));
     }
 
     @Test
     void thePadCommandPointsToTheNewOne() {
-        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        PlayerMock leader = leaderWithSquad("Boss", "TestGroup");
         run(leader, "squad", "pad", "set");
         assertTrue(received(leader, "replaced by joining blocks"));
-        assertNull(plugin.squads().profile("NULL").orElseThrow().blockMaterial());
+        assertNull(plugin.squads().profile("TestGroup").orElseThrow().blockMaterial());
     }
 
     // ------------------------------------------------------------------ never forcing, never spamming, limits
 
     @Test
     void nobodyIsMovedOutOfAnExistingSquadAndTheNoticeIsNotSpammed() {
-        leaderOf("NULL", "obsidian");
+        leaderOf("TestGroup", "obsidian");
         PlayerMock busy = leaderWithSquad("Busy", "ALPHA");
         for (int i = 0; i < 20; i++) {
             stepOn(busy, put(Material.OBSIDIAN, i, 64, 0));
@@ -371,69 +371,69 @@ class BlockTest extends V11TestBase {
     @Test
     void aFullSquadTurnsPlayersAwayWithOneMessage() {
         setConfig("synchronization.max-squad-size", 3);
-        leaderOf("NULL", "obsidian");
+        leaderOf("TestGroup", "obsidian");
         List<PlayerMock> walkers = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             PlayerMock walker = server.addPlayer("W" + i);
             walkers.add(walker);
             stepOn(walker, put(Material.OBSIDIAN, i, 64, 0));
         }
-        assertEquals(3, plugin.squads().squadByName("NULL").orElseThrow().size());
+        assertEquals(3, plugin.squads().squadByName("TestGroup").orElseThrow().size());
         assertTrue(received(walkers.get(4), "is full"));
     }
 
     @Test
     void leavingAndRejoining() {
-        leaderOf("NULL", "obsidian");
+        leaderOf("TestGroup", "obsidian");
         PlayerMock walker = server.addPlayer("Walker");
         stepOn(walker, put(Material.OBSIDIAN, 1, 64, 1));
         run(walker, "squad", "leave");
-        assertFalse(isMemberOf(walker, "NULL"));
+        assertFalse(isMemberOf(walker, "TestGroup"));
         messages(walker);
         stepOn(walker, put(Material.OBSIDIAN, 2, 64, 1));
-        assertTrue(isMemberOf(walker, "NULL"));
+        assertTrue(isMemberOf(walker, "TestGroup"));
         assertEquals(1, messages(walker).stream().filter(m -> m.contains("You joined")).count());
     }
 
     @Test
     void aSquadWithNoMembersAtAllIsLeftAloneWithoutAnyMessage() {
-        PlayerMock leader = leaderOf("NULL", "obsidian");
+        PlayerMock leader = leaderOf("TestGroup", "obsidian");
         run(leader, "squad", "leave");
         PlayerMock walker = server.addPlayer("Walker");
         stepOn(walker, put(Material.OBSIDIAN, 1, 64, 1));
-        assertFalse(isMemberOf(walker, "NULL"));
+        assertFalse(isMemberOf(walker, "TestGroup"));
         assertTrue(messages(walker).stream().noneMatch(m -> m.contains("not running") || m.contains("Ask its leader")));
     }
 
     @ParameterizedTest
     @ValueSource(ints = {10, 30, 100})
     void manyPlayersJoinOneAfterAnotherOnDifferentBlocks(int count) {
-        leaderOf("NULL", "obsidian");
+        leaderOf("TestGroup", "obsidian");
         List<PlayerMock> walkers = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             PlayerMock walker = server.addPlayer("W" + i);
             walkers.add(walker);
             stepOn(walker, put(Material.OBSIDIAN, i * 3, 64, (i % 7) * 5));
         }
-        assertEquals(count + 1, plugin.squads().squadByName("NULL").orElseThrow().size());
-        assertTrue(walkers.stream().allMatch(w -> isMemberOf(w, "NULL")));
+        assertEquals(count + 1, plugin.squads().squadByName("TestGroup").orElseThrow().size());
+        assertTrue(walkers.stream().allMatch(w -> isMemberOf(w, "TestGroup")));
     }
 
     @Test
     void manyPlayersArrivingAtOnceNeverExceedTheLimit() {
         setConfig("synchronization.max-squad-size", 20);
-        leaderOf("NULL", "obsidian");
+        leaderOf("TestGroup", "obsidian");
         Block obsidian = put(Material.OBSIDIAN, 10, 64, 10);
         for (int i = 0; i < 60; i++) {
             PlayerMock p = server.addPlayer("C" + i);
             server.getPluginManager().callEvent(new PlayerMoveEvent(p, standingOn(obsidian).add(0, 0, 3), standingOn(obsidian)));
         }
-        assertEquals(20, plugin.squads().squadByName("NULL").orElseThrow().size());
+        assertEquals(20, plugin.squads().squadByName("TestGroup").orElseThrow().size());
     }
 
     @Test
     void movementIsCheapForHundredsOfPlayersWhetherOrNotAssignmentsExist() {
-        leaderOf("NULL", "obsidian");
+        leaderOf("TestGroup", "obsidian");
         List<PlayerMock> crowd = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             crowd.add(server.addPlayer("P" + i));
@@ -456,13 +456,13 @@ class BlockTest extends V11TestBase {
 
     @Test
     void theMaterialIsSavedAndFoundAgainAfterARestart() throws Exception {
-        PlayerMock leader = leaderOf("NULL", "obsidian");
+        PlayerMock leader = leaderOf("TestGroup", "obsidian");
         run(leader, "squad", "speed", "5");
         plugin.flushSquads(true);
         Path file = plugin.getDataFolder().toPath().resolve("squads.yml");
         String yaml = Files.readString(file);
         assertTrue(yaml.contains("material: obsidian"));
-        assertFalse(yaml.contains("NULLBoss"), "no player names");
+        assertFalse(yaml.contains("TestGroupBoss"), "no player names");
 
         SquadStore store = new SquadStore(file, plugin.getLogger());
         List<String> warnings = new ArrayList<>();
@@ -471,21 +471,21 @@ class BlockTest extends V11TestBase {
         fresh.reindexBlocks(profile -> world.getUID());
 
         assertEquals(List.of(), warnings);
-        assertEquals(5, fresh.profile("null").orElseThrow().speed());
+        assertEquals(5, fresh.profile("testgroup").orElseThrow().speed());
         assertTrue(fresh.blockFor(world.getUID(), Material.OBSIDIAN, false).isPresent());
         assertTrue(fresh.blockFor(world.getUID(), Material.STONE, false).isEmpty());
         fresh.restoreSquads(warnings);
-        assertTrue(fresh.squadByName("NULL").isPresent(), "the squad and its leader come back by themselves");
+        assertTrue(fresh.squadByName("TestGroup").isPresent(), "the squad and its leader come back by themselves");
         SquadManager again = new SquadManager(System::currentTimeMillis);
         again.loadProfiles(store.load(new ArrayList<>()));
-        assertEquals(SquadManager.Status.NAME_RESERVED, again.create(UUID.randomUUID(), "NULL", false));
+        assertEquals(SquadManager.Status.NAME_RESERVED, again.create(UUID.randomUUID(), "TestGroup", false));
     }
 
     @Test
     void aSavedWorldIsFoundByNameWhenItsIdChangedAndKeptDormantWhenNotLoaded() {
         SquadManager manager = new SquadManager(System::currentTimeMillis);
-        manager.create(UUID.randomUUID(), "NULL", false);
-        SquadProfile profile = manager.profile("NULL").orElseThrow();
+        manager.create(UUID.randomUUID(), "TestGroup", false);
+        SquadProfile profile = manager.profile("TestGroup").orElseThrow();
         UUID oldId = UUID.randomUUID();
         manager.setBlock(profile, Material.OBSIDIAN, "world", oldId);
         assertTrue(manager.blockFor(oldId, Material.OBSIDIAN, false).isPresent());
@@ -502,14 +502,14 @@ class BlockTest extends V11TestBase {
 
     @Test
     void anOldCoordinatePadIsRetiredNeverTriggersAndTheLeaderIsToldOnce() throws Exception {
-        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        PlayerMock leader = leaderWithSquad("Boss", "TestGroup");
         run(leader, "squad", "leave");
         Path file = plugin.getDataFolder().toPath().resolve("squads.yml");
         Files.writeString(file, """
                 version: 1
                 squads:
                   null:
-                    name: NULL
+                    name: TestGroup
                     owner: %s
                     speed: 4
                     pad:
@@ -526,28 +526,28 @@ class BlockTest extends V11TestBase {
         plugin.joinBlocks().reindex();
 
         assertTrue(warnings.stream().anyMatch(w -> w.contains("retired")), warnings.toString());
-        SquadProfile profile = plugin.squads().profile("NULL").orElseThrow();
+        SquadProfile profile = plugin.squads().profile("TestGroup").orElseThrow();
         assertEquals(4, profile.speed(), "other settings survive");
         assertNull(profile.blockMaterial());
 
         // The old coordinate block (stone at 10,64,10) does nothing, even with a live squad.
-        run(leader, "squad", "create", "NULL");
+        run(leader, "squad", "create", "TestGroup");
         assertTrue(received(leader, "retired"));
         PlayerMock walker = server.addPlayer("Walker");
         stepOn(walker, put(Material.STONE, 10, 64, 10));
-        assertFalse(isMemberOf(walker, "NULL"));
+        assertFalse(isMemberOf(walker, "TestGroup"));
 
         plugin.flushSquads(true);
         assertFalse(Files.readString(file).contains("legacy-pad"), "told once, then forgotten");
         assertFalse(Files.readString(file).contains("pad:"));
         run(leader, "squad", "leave");
-        run(leader, "squad", "create", "NULL");
+        run(leader, "squad", "create", "TestGroup");
         assertFalse(received(leader, "retired"));
     }
 
     @Test
     void tabCompletionOffersBlockActionsAndMaterials() {
-        PlayerMock leader = leaderWithSquad("Boss", "NULL");
+        PlayerMock leader = leaderWithSquad("Boss", "TestGroup");
         assertTrue(command.complete(leader, new String[]{"squad", "bl"}).contains("block"));
         assertFalse(command.complete(leader, new String[]{"squad", ""}).contains("pad"));
         assertEquals(List.of("set"), command.complete(leader, new String[]{"squad", "block", "se"}));

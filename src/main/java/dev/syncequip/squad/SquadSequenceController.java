@@ -78,6 +78,11 @@ public final class SquadSequenceController {
     }
 
     public boolean start(Player requester) {
+        return start(requester, null);
+    }
+
+    /** Starts the squad's equip; a non-null countdown replaces the configured one (the guided tour uses 0). */
+    public boolean start(Player requester, Integer countdownSeconds) {
         Optional<Squad> found = controlledSquad(requester);
         if (found.isEmpty()) {
             return false;
@@ -120,7 +125,8 @@ public final class SquadSequenceController {
             return false;
         }
 
-        sequences.startGroup(SyncSequence.Mode.SQUAD, squad.id(), requester, members, config.squadCountdownSeconds(),
+        sequences.startGroup(SyncSequence.Mode.SQUAD, squad.id(), requester, members,
+                countdownSeconds != null ? countdownSeconds : config.squadCountdownSeconds(),
                 config, loadout, SequenceService.Action.EQUIP, interval, true, policy);
         for (Player member : members) {
             sequences.noteSkipped(member, config, loadout, true, policy);
@@ -131,6 +137,11 @@ public final class SquadSequenceController {
     }
 
     public boolean unequip(Player requester) {
+        return unequip(requester, null);
+    }
+
+    /** Starts the squad's unequip; a non-null countdown replaces the configured one. */
+    public boolean unequip(Player requester, Integer countdownSeconds) {
         Optional<Squad> found = controlledSquad(requester);
         if (found.isEmpty()) {
             return false;
@@ -179,7 +190,8 @@ public final class SquadSequenceController {
             return false;
         }
 
-        sequences.startGroup(SyncSequence.Mode.SQUAD, squad.id(), requester, members, config.unequipCountdownSeconds(),
+        sequences.startGroup(SyncSequence.Mode.SQUAD, squad.id(), requester, members,
+                countdownSeconds != null ? countdownSeconds : config.unequipCountdownSeconds(),
                 config, loadout, SequenceService.Action.UNEQUIP, interval, true);
         for (Player member : members) {
             messages.send(member, "unequip.started", ph("leader", requester.getName()), ph("count", members.size()),

@@ -117,7 +117,7 @@ Everything is set in game, no config editing. The six slots are `mainhand`, `off
 |---|---|
 | `/syncequip solo set <slot> <item>` | Choose what `/se solo` equips for you, for example `/se solo set head carved_pumpkin` |
 | `/syncequip solo show` / `reset` | See your own loadout, or go back to the server default |
-| `/syncequip group set [group] <slot> <item>` | The same for a group, for example `/se group set NULL offhand totem_of_undying`. The group name can be left out if you lead one (leader) |
+| `/syncequip group set [group] <slot> <item>` | The same for a group, for example `/se group set TestGroup offhand totem_of_undying`. The group name can be left out if you lead one (leader) |
 | `/syncequip group show [group]` / `reset [group]` | See or restore a group's loadout |
 | `/syncequip squad loadout optional <slot> on\|off` | Skip the slot quietly when the item is missing |
 | `/syncequip squad loadout order <slots...>` | Slots that go first |

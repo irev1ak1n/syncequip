@@ -251,7 +251,7 @@ block:
 
 loadout:
   usage: '<red>Usage: /syncequip squad loadout \<show|reset|set|optional|order>'
-  usage-set: '<red>Usage: set \<mainhand|offhand|head|chest|legs|feet> \<item|any|off>. For example <white>/syncequip solo set head carved_pumpkin</white> or <white>/syncequip group set NULL chest elytra</white>.'
+  usage-set: '<red>Usage: set \<mainhand|offhand|head|chest|legs|feet> \<item|any|off>. For example <white>/syncequip solo set head carved_pumpkin</white> or <white>/syncequip group set TestGroup chest elytra</white>.'
   usage-solo: '<red>Usage: /syncequip solo \<set|show|reset>. For example <white>/syncequip solo set mainhand netherite_sword</white>.'
   solo-reset: '<green>Your solo loadout is back to the server default.'
   solo-busy: '<red>Wait until your running sequence has finished before changing your loadout.'

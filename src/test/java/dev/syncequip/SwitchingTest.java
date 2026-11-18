@@ -37,7 +37,7 @@ class SwitchingTest extends V11TestBase {
 
     @Test
     void anAxeInHandWithTheSwordElsewhereOnTheHotbarSwitchesTheSelectedSlot() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         PlayerInventory inv = cleared(p);
         inv.setItem(0, new ItemStack(Material.IRON_AXE));
@@ -55,7 +55,7 @@ class SwitchingTest extends V11TestBase {
 
     @Test
     void theSwordAlreadySelectedIsLeftAlone() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         PlayerInventory inv = cleared(p);
         inv.setItem(0, new ItemStack(Material.IRON_SWORD));
@@ -69,7 +69,7 @@ class SwitchingTest extends V11TestBase {
 
     @Test
     void aSwordInTheMainInventoryIsSwappedIntoTheSelectedSlot() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         PlayerInventory inv = cleared(p);
         inv.setItem(0, new ItemStack(Material.DIAMOND_PICKAXE));
@@ -86,7 +86,7 @@ class SwitchingTest extends V11TestBase {
 
     @Test
     void anEmptyHandTakesTheSwordWithoutMovingAnythingElse() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         PlayerInventory inv = cleared(p);
         inv.setItem(30, new ItemStack(Material.IRON_SWORD));
@@ -99,7 +99,7 @@ class SwitchingTest extends V11TestBase {
 
     @Test
     void aTotemInTheOffhandIsReplacedByTheShieldAndComesBack() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         PlayerInventory inv = cleared(p);
         inv.setItem(0, new ItemStack(Material.IRON_SWORD));
@@ -115,7 +115,7 @@ class SwitchingTest extends V11TestBase {
 
     @Test
     void anyConfiguredOffhandItemIsSupported() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         run(squad.get(0), "squad", "loadout", "set", "offhand", "totem_of_undying");
         PlayerMock p = squad.get(1);
         PlayerInventory inv = cleared(p);
@@ -131,7 +131,7 @@ class SwitchingTest extends V11TestBase {
 
     @Test
     void wornArmorIsReplacedAndKeepsItsEnchantmentsAndName() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         run(squad.get(0), "squad", "loadout", "set", "helmet", "iron_helmet");
         run(squad.get(0), "squad", "loadout", "set", "boots", "iron_boots");
         PlayerMock p = squad.get(1);
@@ -155,7 +155,7 @@ class SwitchingTest extends V11TestBase {
 
     @Test
     void alreadyCorrectEquipmentCausesNoError() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         PlayerInventory inv = cleared(p);
         inv.clear();
@@ -174,7 +174,7 @@ class SwitchingTest extends V11TestBase {
 
     @Test
     void aFullInventoryStillSwapsAndNothingIsDropped() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         PlayerInventory inv = p.getInventory();
         inv.clear();
@@ -203,7 +203,7 @@ class SwitchingTest extends V11TestBase {
 
     @Test
     void aMemberWhoTrulyHasNoSwordIsLeftOutAndTheRestStillEquip() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         PlayerMock noSword = squad.get(2);
         cleared(noSword).setItem(0, new ItemStack(Material.IRON_AXE));
 
@@ -216,7 +216,7 @@ class SwitchingTest extends V11TestBase {
 
     @Test
     void repeatedEquipAndUnequipRoundsKeepEveryItem() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         PlayerInventory inv = cleared(p);
         inv.setItem(0, new ItemStack(Material.IRON_AXE));
@@ -237,7 +237,7 @@ class SwitchingTest extends V11TestBase {
 
     @Test
     void everyPlayerSwitchesWeaponOnTheSameTickWhateverTheyHold() {
-        List<PlayerMock> squad = formSquad("NULL", 4);
+        List<PlayerMock> squad = formSquad("TestGroup", 4);
         for (int i = 0; i < squad.size(); i++) {
             PlayerInventory inv = cleared(squad.get(i));
             inv.setItem(0, new ItemStack(i % 2 == 0 ? Material.IRON_AXE : Material.DIAMOND_PICKAXE));

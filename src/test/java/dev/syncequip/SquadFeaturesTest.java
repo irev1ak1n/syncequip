@@ -36,7 +36,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void speedCommandShowsAndSetsTheSquadSpeed() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         run(squad.get(0), "squad", "speed");
         assertTrue(received(squad.get(0), "2 ticks"));
         run(squad.get(0), "squad", "speed", "4");
@@ -44,23 +44,23 @@ class SquadFeaturesTest extends V11TestBase {
         run(squad.get(0), "squad", "speed");
         assertTrue(received(squad.get(0), "4 ticks"));
         run(squad.get(0), "squad", "speed", "default");
-        assertEquals(null, plugin.squads().profile("NULL").orElseThrow().speed());
+        assertEquals(null, plugin.squads().profile("TestGroup").orElseThrow().speed());
     }
 
     @Test
     void invalidSpeedsAreRejected() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         for (String bad : new String[]{"0", "11", "-3", "fast", "2.5"}) {
             run(squad.get(0), "squad", "speed", bad);
         }
-        assertNull(plugin.squads().profile("NULL").orElseThrow().speed());
+        assertNull(plugin.squads().profile("TestGroup").orElseThrow().speed());
         assertEquals(5, messages(squad.get(0)).stream().filter(m -> m.contains("1 to 10")).count());
     }
 
     @ParameterizedTest
     @ValueSource(ints = {1, 2, 4, 6, 10})
     void everySupportedSpeedKeepsAllMembersOnTheSameTick(int speed) {
-        List<PlayerMock> squad = formSquad("NULL", 8);
+        List<PlayerMock> squad = formSquad("TestGroup", 8);
         run(squad.get(0), "squad", "speed", String.valueOf(speed));
         run(squad.get(0), "squad", "start");
         Map<UUID, Map<EquipmentSlot, Long>> ticks = recordFilled(squad, 120);
@@ -77,7 +77,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void speedAlsoControlsUnequipping() {
-        List<PlayerMock> squad = formSquad("NULL", 5);
+        List<PlayerMock> squad = formSquad("TestGroup", 5);
         run(squad.get(0), "squad", "speed", "4");
         equipSquad(squad.get(0));
         run(squad.get(0), "squad", "unequip");
@@ -118,7 +118,7 @@ class SquadFeaturesTest extends V11TestBase {
     @Test
     void squadsWithoutTheirOwnSpeedUseTheGlobalDefault() {
         setConfig("equipment.interval-ticks", 3);
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         run(squad.get(0), "squad", "start");
         Map<UUID, Map<EquipmentSlot, Long>> ticks = recordFilled(squad, 60);
         Map<EquipmentSlot, Long> mine = ticks.get(squad.get(0).getUniqueId());
@@ -127,23 +127,23 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void membersCannotChangeTheSpeed() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         run(squad.get(1), "squad", "speed", "6");
         assertTrue(received(squad.get(1), "Only the squad leader"));
-        assertNull(plugin.squads().profile("NULL").orElseThrow().speed());
+        assertNull(plugin.squads().profile("TestGroup").orElseThrow().speed());
         run(squad.get(1), "squad", "speed");
         assertTrue(received(squad.get(1), "ticks"), "members can look");
     }
 
     @Test
     void speedCannotChangeWhileASequenceRuns() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         run(squad.get(0), "squad", "start");
         tick(3);
         messages(squad.get(0));
         run(squad.get(0), "squad", "speed", "9");
         assertTrue(received(squad.get(0), "sequence is running"));
-        assertNull(plugin.squads().profile("NULL").orElseThrow().speed());
+        assertNull(plugin.squads().profile("TestGroup").orElseThrow().speed());
     }
 
     // ------------------------------------------------------------------ loadouts
@@ -166,7 +166,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void aCustomNetheriteLoadoutWithSwordAndTotem() {
-        List<PlayerMock> squad = formSquad("NULL", 6);
+        List<PlayerMock> squad = formSquad("TestGroup", 6);
         PlayerMock leader = squad.get(0);
         for (String[] set : new String[][]{{"helmet", "netherite"}, {"chestplate", "netherite"},
                 {"leggings", "netherite"}, {"boots", "netherite"}, {"mainhand", "netherite_sword"},
@@ -191,7 +191,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void swordInTheInventoryMovesIntoTheSelectedEmptyHotbarSlot() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         p.getInventory().clear();
         giveNetherite(p, false, false);
@@ -210,7 +210,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void anotherItemInTheHandNoLongerBlocksTheSquad() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         PlayerMock busy = squad.get(2);
         busy.getInventory().setItem(0, new ItemStack(Material.DIAMOND_PICKAXE));
         busy.getInventory().setItem(15, new ItemStack(Material.IRON_SWORD));
@@ -224,7 +224,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void theHandItemSwapsWithTheSword() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         p.getInventory().setItem(0, new ItemStack(Material.DIAMOND_PICKAXE));
         p.getInventory().setItem(15, new ItemStack(Material.IRON_SWORD));
@@ -239,7 +239,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void theDefaultLoadoutNeedsASword() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         squad.get(2).getInventory().setItem(0, null);
         run(squad.get(0), "squad", "start");
         assertTrue(messages(squad.get(0)).stream().anyMatch(m -> m.contains(squad.get(2).getName()) && m.contains("missing Sword")));
@@ -247,7 +247,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void anOptionalSlotIsSkippedQuietlyWhenMissing() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         squad.get(2).getInventory().setItem(0, null);
         run(squad.get(0), "squad", "loadout", "optional", "mainhand", "on");
         run(squad.get(0), "squad", "start");
@@ -259,7 +259,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void onlyChestplateAndShieldWhenTheRestIsDisabled() {
-        List<PlayerMock> squad = formSquad("NULL", 4);
+        List<PlayerMock> squad = formSquad("TestGroup", 4);
         for (String slot : new String[]{"helmet", "leggings", "boots", "mainhand"}) {
             run(squad.get(0), "squad", "loadout", "set", slot, "none");
         }
@@ -277,7 +277,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void disabledSlotsDoNotNeedItemsOrMakeSound() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         for (String slot : new String[]{"helmet", "mainhand"}) {
             run(squad.get(0), "squad", "loadout", "set", slot, "none");
         }
@@ -290,7 +290,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void missingNetheriteIsNamedClearly() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         run(squad.get(0), "squad", "loadout", "set", "helmet", "netherite");
         run(squad.get(0), "squad", "start");
         assertTrue(received(squad.get(0), "missing Netherite Helmet"));
@@ -298,7 +298,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void wearingTheWrongMaterialIsSwappedAndTheRightOneIsAccepted() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         squad.get(1).getInventory().setBoots(new ItemStack(Material.IRON_BOOTS));
         run(squad.get(0), "squad", "start");
         tick(60);
@@ -336,11 +336,11 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void resetReturnsToTheDefaultAndBadInputIsExplained() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock leader = squad.get(0);
         run(leader, "squad", "loadout", "set", "helmet", "none");
         run(leader, "squad", "loadout", "reset");
-        assertNull(plugin.squads().profile("NULL").orElseThrow().loadout());
+        assertNull(plugin.squads().profile("TestGroup").orElseThrow().loadout());
 
         messages(leader);
         run(leader, "squad", "loadout", "set", "helmet", "netherite_boots");
@@ -351,21 +351,21 @@ class SquadFeaturesTest extends V11TestBase {
         assertTrue(received(leader, "not an item I know"));
         run(leader, "squad", "loadout", "set", "offhand", "any_sword");
         assertTrue(received(leader, "only works for the main hand"));
-        assertNull(plugin.squads().profile("NULL").orElseThrow().loadout());
+        assertNull(plugin.squads().profile("TestGroup").orElseThrow().loadout());
     }
 
     @Test
     void membersCanLookButNotChangeTheLoadout() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         run(squad.get(1), "squad", "loadout", "set", "helmet", "none");
         assertTrue(received(squad.get(1), "Only the squad leader"));
         run(squad.get(1), "squad", "loadout", "show");
-        assertTrue(received(squad.get(1), "Loadout of NULL"));
+        assertTrue(received(squad.get(1), "Loadout of TestGroup"));
     }
 
     @Test
     void customOrderChangesTheSequence() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         run(squad.get(0), "squad", "loadout", "order", "offhand", "helmet");
         run(squad.get(0), "squad", "start");
         Map<UUID, Map<EquipmentSlot, Long>> ticks = recordFilled(squad, 60);
@@ -376,7 +376,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void tabCompletionForSpeedLoadoutAndPad() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock leader = squad.get(0);
         assertTrue(command.complete(leader, new String[]{"squad", "sp"}).contains("speed"));
         assertTrue(command.complete(leader, new String[]{"squad", "speed", ""}).containsAll(List.of("1", "2", "4", "6", "10")));
@@ -388,7 +388,7 @@ class SquadFeaturesTest extends V11TestBase {
         assertTrue(command.complete(leader, new String[]{"squad", "loadout", "set", "offhand", "tot"}).contains("totem_of_undying"));
         assertTrue(command.complete(leader, new String[]{"squad", "unequip"}).isEmpty() || true);
         assertTrue(command.complete(leader, new String[]{"squad", "un"}).contains("unequip"));
-        assertTrue(command.complete(leader, new String[]{"squad", "join", "NU"}).contains("NULL"));
+        assertTrue(command.complete(leader, new String[]{"squad", "join", "Test"}).contains("TestGroup"));
     }
 
     // ------------------------------------------------------------------ unequipping
@@ -396,7 +396,7 @@ class SquadFeaturesTest extends V11TestBase {
     @ParameterizedTest
     @ValueSource(ints = {10, 30, 100})
     void everyoneTakesEachPieceOffOnTheSameTickInReverseOrder(int size) {
-        List<PlayerMock> squad = formSquad("NULL", size);
+        List<PlayerMock> squad = formSquad("TestGroup", size);
         equipSquad(squad.get(0));
         assertTrue(squad.stream().allMatch(p -> countEquipped(p) == 5), "everyone was fully equipped first");
         int before = totalItems(squad.get(0));
@@ -421,7 +421,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void theSwordGoesBackToTheInventoryFirstAndTheSelectedSlotStays() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         equipSquad(squad.get(0));
         run(squad.get(0), "squad", "unequip");
         tick(5);
@@ -435,7 +435,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void enchantmentsNamesAndDurabilitySurviveTheRoundTrip() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         PlayerMock p = squad.get(1);
         ItemStack helmet = new ItemStack(Material.IRON_HELMET);
         helmet.addUnsafeEnchantment(Enchantment.PROTECTION, 4);
@@ -460,7 +460,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void unequipNeverDropsItemsOrOverwritesOtherItems() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         equipSquad(squad.get(0));
         PlayerMock p = squad.get(1);
         p.getInventory().setItem(1, new ItemStack(Material.DIRT, 64));
@@ -477,7 +477,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void aMemberWithAFullInventoryIsLeftOutWithAnExplanationAndKeepsTheirGear() {
-        List<PlayerMock> squad = formSquad("NULL", 4);
+        List<PlayerMock> squad = formSquad("TestGroup", 4);
         equipSquad(squad.get(0));
         PlayerMock full = squad.get(2);
         for (int i = 1; i < 36; i++) {
@@ -499,7 +499,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void nobodyToUnequipIsExplained() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         squad.forEach(p -> p.getInventory().clear());
         run(squad.get(0), "squad", "unequip");
         assertTrue(received(squad.get(0), "Nobody in the squad has anything to take off"));
@@ -508,7 +508,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void onlyTheLeaderOrAnAdminCanUnequipTheSquad() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         equipSquad(squad.get(0));
         run(squad.get(1), "squad", "unequip");
         assertTrue(received(squad.get(1), "Only the squad leader"));
@@ -522,7 +522,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void equipAndUnequipCannotOverlap() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         run(squad.get(0), "squad", "start");
         tick(3);
         messages(squad.get(0));
@@ -539,7 +539,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void aDisconnectDuringUnequipDoesNotHurtTheOthersOrTheLeaversInventory() {
-        List<PlayerMock> squad = formSquad("NULL", 4);
+        List<PlayerMock> squad = formSquad("TestGroup", 4);
         equipSquad(squad.get(0));
         PlayerMock leaver = squad.get(2);
         int before = totalItems(leaver);
@@ -556,7 +556,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void shuttingDownMidUnequipLeavesEveryInventoryValid() {
-        List<PlayerMock> squad = formSquad("NULL", 5);
+        List<PlayerMock> squad = formSquad("TestGroup", 5);
         equipSquad(squad.get(0));
         int before = totalItems(squad.get(1));
         run(squad.get(0), "squad", "unequip");
@@ -572,7 +572,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void changingWorldsMidUnequipStopsOnlyThatPlayer() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         equipSquad(squad.get(0));
         run(squad.get(0), "squad", "unequip");
         tick(3);
@@ -588,7 +588,7 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void dyingMidUnequipDoesNotDuplicateAnything() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         equipSquad(squad.get(0));
         run(squad.get(0), "squad", "unequip");
         tick(3);
@@ -631,15 +631,15 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void joiningBySquadNameOrByLeaderNameBothWork() {
-        PlayerMock leader = leaderWithSquad("Chief", "NULL");
+        PlayerMock leader = leaderWithSquad("Chief", "TestGroup");
         PlayerMock one = server.addPlayer("One");
         PlayerMock two = server.addPlayer("Two");
         run(leader, "squad", "invite", "One");
         run(leader, "squad", "invite", "Two");
-        run(one, "squad", "join", "null");
+        run(one, "squad", "join", "testgroup");
         run(two, "squad", "join", "Chief");
-        assertTrue(isMemberOf(one, "NULL"));
-        assertTrue(isMemberOf(two, "NULL"));
+        assertTrue(isMemberOf(one, "TestGroup"));
+        assertTrue(isMemberOf(two, "TestGroup"));
     }
 
     @Test
@@ -649,8 +649,8 @@ class SquadFeaturesTest extends V11TestBase {
         run(a, "squad", "create", "x");
         assertTrue(received(a, "2 to 24"));
         run(a, "squad", "create", "has space");
-        run(a, "squad", "create", "NULL");
-        run(b, "squad", "create", "null");
+        run(a, "squad", "create", "TestGroup");
+        run(b, "squad", "create", "testgroup");
         assertTrue(received(b, "already running"));
         run(b, "squad", "create");
         assertTrue(isMemberOf(b, "B1"), "the default name is the leader's name");
@@ -658,12 +658,12 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void infoShowsSpeedLoadoutAndPadToMembers() {
-        List<PlayerMock> squad = formSquad("NULL", 3);
+        List<PlayerMock> squad = formSquad("TestGroup", 3);
         run(squad.get(0), "squad", "speed", "6");
         messages(squad.get(1));
         run(squad.get(1), "squad", "info");
         List<String> lines = messages(squad.get(1));
-        assertTrue(lines.stream().anyMatch(m -> m.contains("Squad NULL")));
+        assertTrue(lines.stream().anyMatch(m -> m.contains("Squad TestGroup")));
         assertTrue(lines.stream().anyMatch(m -> m.contains("3/200")));
         assertTrue(lines.stream().anyMatch(m -> m.contains("6 ticks")));
         assertTrue(lines.stream().anyMatch(m -> m.contains("Boots > Leggings > Chestplate > Helmet > Shield > Sword")));
@@ -672,12 +672,12 @@ class SquadFeaturesTest extends V11TestBase {
 
     @Test
     void reloadingTheConfigKeepsSquadSettings() {
-        List<PlayerMock> squad = formSquad("NULL", 2);
+        List<PlayerMock> squad = formSquad("TestGroup", 2);
         run(squad.get(0), "squad", "speed", "5");
         run(squad.get(0), "squad", "loadout", "set", "helmet", "none");
         plugin.reloadSettings();
-        assertEquals(5, plugin.squads().profile("NULL").orElseThrow().speed());
-        assertFalse(plugin.squads().profile("NULL").orElseThrow().loadout().requirement(
+        assertEquals(5, plugin.squads().profile("TestGroup").orElseThrow().speed());
+        assertFalse(plugin.squads().profile("TestGroup").orElseThrow().loadout().requirement(
                 dev.syncequip.equipment.EquipmentStep.HELMET).enabled());
     }
 }
