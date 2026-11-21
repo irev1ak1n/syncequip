@@ -17,11 +17,11 @@ Everything needed to publish SyncEquip on Modrinth. Upload the same jar that is 
 
 | Field | Value |
 |---|---|
-| Version number | 1.1.2 |
+| Version number | 1.2.0 |
 | Release channel | Release |
 | Loader | Paper |
 | Game version | 26.3 |
-| File | `SyncEquip-1.1.2.jar` (primary) |
+| File | `SyncEquip-1.2.0.jar` (primary) |
 | Dependencies | None |
 
 ## Description

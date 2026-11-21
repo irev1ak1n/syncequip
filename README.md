@@ -10,7 +10,7 @@ Whether you're creating a cinematic army reveal, preparing for a large-scale bat
 
 **[Download SyncEquip from GitHub Releases](https://github.com/irev1ak1n/syncequip/releases/latest)**
 
-On that page, scroll to **Assets** and click `SyncEquip-1.1.2.jar`. That file is the whole plugin.
+On that page, scroll to **Assets** and click `SyncEquip-1.2.0.jar`. That file is the whole plugin.
 
 ## Who installs it?
 
@@ -23,7 +23,7 @@ Only the **server owner or admin** installs SyncEquip, once, on the server. **Pl
 
 ## Install it
 
-1. Download `SyncEquip-1.1.2.jar` (see above).
+1. Download `SyncEquip-1.2.0.jar` (see above).
 2. Put it in your server's **`plugins`** folder:
    - **Hosting panel** (for example Pterodactyl or Apex): open the **File Manager**, open the `plugins` folder, click **Upload** and choose the jar.
    - **Your own computer or server:** copy the file into the `plugins` folder next to `paper.jar`.

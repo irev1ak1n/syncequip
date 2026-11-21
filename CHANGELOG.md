@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 six-slot loadouts and a clearer tour
 
 - The demo tour now visibly clears and refills the bots in the Speed Control (10 ticks per piece, then 1) and Custom
   Loadout stages. The squad equips were being refused by the sequence cooldown, so only the titles showed.
@@ -12,10 +12,10 @@
   group loadouts.
 - With a custom loadout, a slot with no matching item is skipped and named, and the rest of the sequence still runs.
   Loadouts that were not customised keep the old behaviour.
-- Guided tour: now about 19 seconds in five stages (Squad Formation, Block Join, Synchronized Equip, Speed Control,
-  Custom Loadout). Each title is on screen for under a second and the action starts right after it. Speed Control shows
-  one slow unequip (10 ticks a piece) and one fast equip (1 tick a piece); Custom Loadout switches to axe, totem and no
-  helmet and ends with one synchronized unequip. The tour's sequences start without the usual countdown.
+- Guided tour: now about 22 seconds in five stages (Squad Formation, Block Join, Synchronized Equip, Speed Control,
+  Custom Loadout). Each title is on screen for under a second and the action starts right after it. Speed Control clears the bots, then shows
+  a slow equip (10 ticks a piece) and a fast one (1 tick a piece); Custom Loadout switches to axe, totem and no
+  helmet, holds it for a moment and takes it off again. The tour's sequences start without the usual countdown.
 - The tour's demo squad is now called `TestGroup` (it was `NULL`).
 - The tour uses five test players by default (`demo.tour.bots`) and checks before every stage that all are online and in
   place. All five, the leader included, walk onto the obsidian; a bot that does not is sent again, then placed, and the

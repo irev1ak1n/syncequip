@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "dev.syncequip"
-version = "1.1.2"
+version = "1.2.0"
 description = "Synchronized, rhythmic armor equipping for solo players and squads."
 
 // Pinned versions for reproducible builds.

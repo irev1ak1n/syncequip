@@ -22,7 +22,7 @@ const PORT = parseInt(process.env.TOUR_PORT || '25599', 10)
 const HOST = '127.0.0.1'
 const SERVER_DIR = path.resolve(process.env.BOT_SERVER_DIR || path.join(__dirname, '..', '..', 'syncequip-bot-server'))
 const RUN_DIR = process.env.TOUR_RUN_DIR || path.join(__dirname, '.run')
-const JAR = path.join(__dirname, '..', 'build', 'libs', 'SyncEquip-1.1.2.jar')
+const JAR = path.join(__dirname, '..', 'build', 'libs', 'SyncEquip-1.2.0.jar')
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 /* Walks to the middle of a block column: faces it, walks forward, hops over small steps, stops on arrival. */
