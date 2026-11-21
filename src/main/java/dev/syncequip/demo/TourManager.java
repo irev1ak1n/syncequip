@@ -72,6 +72,7 @@ public final class TourManager {
     private boolean needSquad;
     private int missingFor;
     private int placeTries;
+    private boolean customLoadoutSet;
 
     public TourManager(SyncEquipPlugin plugin) {
         this.plugin = plugin;
@@ -119,6 +120,7 @@ public final class TourManager {
         needSquad = false;
         missingFor = 0;
         placeTries = 0;
+        customLoadoutSet = false;
         introduced = null;
         paused = false;
         index = 0;
@@ -327,19 +329,37 @@ public final class TourManager {
         return bots.stream().noneMatch(b -> plugin.sequenceService().scheduler().isBusy(b.getUniqueId()));
     }
 
-    /** The tour starts its sequences straight away; the configured countdown is for real players. */
+    /** The tour starts its sequences straight away; the configured countdown and cooldown are for real players. */
     private void equipAndWait(String title, String subtitle, int hold, Runnable before) {
         addAndWait(title, subtitle, () -> {
             before.run();
-            plugin.squadController().start(leader(), 0);
+            restock();
+            startSequence(true);
         }, this::idle, hold, SEQUENCE_TIMEOUT);
     }
 
     private void unequipAndWait(String title, String subtitle, int hold, Runnable before) {
         addAndWait(title, subtitle, () -> {
             before.run();
-            plugin.squadController().unequip(leader(), 0);
+            startSequence(false);
         }, this::idle, hold, SEQUENCE_TIMEOUT);
+    }
+
+    /** A bot that just equipped is on the normal cooldown, which would silently refuse the next sequence. */
+    private void startSequence(boolean equip) {
+        bots.forEach(b -> plugin.cooldowns().clear(b.getUniqueId()));
+        boolean started = equip ? plugin.squadController().start(leader(), 0) : plugin.squadController().unequip(leader(), 0);
+        if (!started) {
+            problem("the squad " + (equip ? "equip" : "unequip") + " did not start, skipping it");
+        }
+    }
+
+    /** Shows how fast the next sequence is, for as long as it runs. */
+    private void note(String text) {
+        if (viewer != null && viewer.isOnline()) {
+            viewer.sendActionBar(Component.text(text, NamedTextColor.YELLOW));
+            viewer.sendMessage(Component.text("[Tour] " + text, NamedTextColor.GOLD));
+        }
     }
 
     private void buildSteps() {
@@ -355,15 +375,24 @@ public final class TourManager {
 
         equipAndWait("Synchronized Equip", subtitle(3, "Armor, sword and shield"), 26, nothing);
 
-        unequipAndWait("Speed Control", subtitle(4, "Slow: " + pace(SLOW_SPEED)), 6,
-                () -> run("squad speed " + SLOW_SPEED));
-        equipAndWait("Speed Control", subtitle(4, "Fast: " + pace(FAST_SPEED)), 24,
-                () -> run("squad speed " + FAST_SPEED));
-
-        unequipAndWait("Custom Loadout", subtitle(5, "Axe, totem, no helmet"), 4,
+        // Speed Control: clear everything, equip slowly, clear again, equip fast. Each equip is a real squad sequence.
+        unequipAndWait("Speed Control", subtitle(4, "Slow: " + pace(SLOW_SPEED)), 10,
                 () -> run("squad speed default"));
-        add("", "", this::customLoadout, 4);
-        equipAndWait("", "", 36, nothing);
+        equipAndWait("", "", 16, () -> {
+            run("squad speed " + SLOW_SPEED);
+            note("Slow: " + pace(SLOW_SPEED));
+        });
+        unequipAndWait("", "", 8, () -> run("squad speed default"));
+        equipAndWait("Speed Control", subtitle(4, "Fast: " + pace(FAST_SPEED)), 24, () -> {
+            run("squad speed " + FAST_SPEED);
+            note("Fast: " + pace(FAST_SPEED));
+        });
+
+        // Custom Loadout: clear, switch the squad loadout, equip it, let it be seen, clear it again.
+        unequipAndWait("Custom Loadout", subtitle(5, "Axe, totem, no helmet"), 6,
+                () -> run("squad speed default"));
+        add("", "", this::customLoadout, 2);
+        equipAndWait("", "", 50, nothing);
         unequipAndWait("", "", 14, nothing);
     }
 
@@ -481,14 +510,21 @@ public final class TourManager {
     }
 
     private void customLoadout() {
-        for (Player bot : bots) {
-            PlayerInventory inv = bot.getInventory();
-            inv.setItem(14, new ItemStack(Material.NETHERITE_AXE));
-            inv.setItem(15, new ItemStack(Material.TOTEM_OF_UNDYING));
-        }
+        customLoadoutSet = true;
+        bots.forEach(this::giveCustomItems);
         run("squad loadout set offhand totem_of_undying");
         run("squad loadout set mainhand any_axe");
         run("squad loadout set helmet none");
+    }
+
+    private void giveCustomItems(Player bot) {
+        PlayerInventory inv = bot.getInventory();
+        if (!inv.contains(Material.NETHERITE_AXE)) {
+            inv.setItem(14, new ItemStack(Material.NETHERITE_AXE));
+        }
+        if (!inv.contains(Material.TOTEM_OF_UNDYING) && inv.getItemInOffHand().getType() != Material.TOTEM_OF_UNDYING) {
+            inv.setItem(15, new ItemStack(Material.TOTEM_OF_UNDYING));
+        }
     }
 
     private void giveKits() {
@@ -507,6 +543,32 @@ public final class TourManager {
         inv.setItem(13, new ItemStack(Material.SHIELD));
     }
 
+    /** A bot that reconnected or lost an item mid-tour gets what the next sequence needs, so nothing is skipped. */
+    private void restock() {
+        for (Player bot : bots) {
+            for (Material needed : kit()) {
+                if (!carries(bot, needed)) {
+                    giveKit(bot);
+                    if (customLoadoutSet) {
+                        giveCustomItems(bot);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    private static List<Material> kit() {
+        return List.of(Material.NETHERITE_SWORD, Material.NETHERITE_BOOTS, Material.NETHERITE_LEGGINGS,
+                Material.NETHERITE_CHESTPLATE, Material.NETHERITE_HELMET, Material.SHIELD);
+    }
+
+    private static boolean carries(Player bot, Material material) {
+        PlayerInventory inv = bot.getInventory();
+        return inv.contains(material) || inv.getItemInOffHand().getType() == material
+                || java.util.Arrays.stream(inv.getArmorContents()).anyMatch(i -> i != null && i.getType() == material);
+    }
+
     private void cleanupSquad() {
         plugin.squads().disband(SQUAD);
     }
@@ -518,6 +580,7 @@ public final class TourManager {
         }
         cleanupSquad();
         for (Player bot : bots) {
+            plugin.cooldowns().clear(bot.getUniqueId());
             if (bot.isOnline()) {
                 bot.getInventory().clear();
                 bot.getInventory().setItemInOffHand(null);

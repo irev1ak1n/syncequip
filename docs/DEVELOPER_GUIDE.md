@@ -43,7 +43,7 @@ Keep test servers outside this repository.
 
 ## Guided tour (5 test players)
 
-`/se demo tour` plays a 19 second, five-stage walkthrough with five Mineflayer test players on an isolated, localhost-only
+`/se demo tour` plays a roughly 22 second, five-stage walkthrough with five Mineflayer test players on an isolated, localhost-only
 offline-mode server (never your real server). From the `bot-test` folder:
 
 ```

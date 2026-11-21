@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The demo tour now visibly clears and refills the bots in the Speed Control (10 ticks per piece, then 1) and Custom
+  Loadout stages. The squad equips were being refused by the sequence cooldown, so only the titles showed.
 - Loadouts are set in game for all six slots: `/se solo set|show|reset` for your own solo loadout and
   `/se group set|show|reset [group]` for a group. Slots are `mainhand`, `offhand`, `head`, `chest`, `legs` and `feet`
   (the old names still work). Hands take any item; armor slots accept whatever the game lets you wear there, such as a

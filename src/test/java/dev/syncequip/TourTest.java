@@ -44,6 +44,8 @@ class TourTest extends V11TestBase {
             bots.add(server.addPlayer("TourBot" + i));
         }
         messages(viewer);
+        // The real cooldown stays on: the tour must not be stopped by it.
+        setConfig("controls.cooldown-seconds", 3);
     }
 
     /** One tick, with the bots doing what tour.js does: a walk cue is followed a moment later by a step onto the block. */
@@ -188,9 +190,132 @@ class TourTest extends V11TestBase {
     }
 
     @Test
-    void theWholeTourTakesBetweenEighteenAndTwentySeconds() {
+    void theWholeTourTakesAboutTwentyFiveSeconds() {
         int ticks = playTour();
-        assertTrue(ticks >= 18 * 20 && ticks <= 20 * 20, "the tour took " + ticks / 20.0 + " s, titles at " + shown);
+        assertTrue(ticks >= 20 * 20 && ticks <= 28 * 20, "the tour took " + ticks / 20.0 + " s, titles at " + shown);
+    }
+
+    private record Sample(int tick, int[] worn, Material[] hand, Material[] offhand, boolean[] helmet) {
+    }
+
+    private List<Sample> recordTour() {
+        List<Sample> samples = new ArrayList<>();
+        run(viewer, "demo", "tour");
+        while (plugin.tour().running() && clock < 12000) {
+            tickOnce();
+            boolean[] helmets = new boolean[bots.size()];
+            for (int i = 0; i < helmets.length; i++) {
+                helmets[i] = bots.get(i).getInventory().getHelmet() != null;
+            }
+            samples.add(new Sample(clock,
+                    bots.stream().mapToInt(PluginTestBase::countEquipped).toArray(),
+                    bots.stream().map(b -> b.getInventory().getItemInMainHand().getType()).toArray(Material[]::new),
+                    bots.stream().map(b -> b.getInventory().getItemInOffHand().getType()).toArray(Material[]::new),
+                    helmets));
+        }
+        return samples;
+    }
+
+    /** Ticks on which the (identical) worn count rose or fell, grouped into one run per sequence. */
+    private static List<List<Integer>> runs(List<Sample> samples, boolean rising) {
+        List<List<Integer>> runs = new ArrayList<>();
+        List<Integer> current = new ArrayList<>();
+        int last = samples.getFirst().worn()[0];
+        int lastTick = 0;
+        for (Sample sample : samples) {
+            int now = sample.worn()[0];
+            if (rising ? now > last : now < last) {
+                if (!current.isEmpty() && sample.tick() - lastTick > 14) {
+                    runs.add(current);
+                    current = new ArrayList<>();
+                }
+                current.add(sample.tick());
+                lastTick = sample.tick();
+            }
+            last = now;
+        }
+        if (!current.isEmpty()) {
+            runs.add(current);
+        }
+        runs.removeIf(run -> run.size() < 3);
+        return runs;
+    }
+
+    private static double averageGap(List<Integer> run) {
+        return (run.getLast() - run.getFirst()) / (double) (run.size() - 1);
+    }
+
+    private static boolean allBare(Sample sample) {
+        return java.util.Arrays.stream(sample.worn()).allMatch(c -> c == 0);
+    }
+
+    @Test
+    void speedControlVisiblyEquipsSlowlyThenQuicklyAfterClearingTheBots() {
+        List<Sample> samples = recordTour();
+        for (Sample sample : samples) {
+            for (int count : sample.worn()) {
+                assertEquals(sample.worn()[0], count, "all five bots are in the same state at tick " + sample.tick());
+            }
+        }
+        List<List<Integer>> equips = runs(samples, true);
+        List<List<Integer>> unequips = runs(samples, false);
+        assertEquals(4, equips.size(), "full equip, slow equip, fast equip, custom equip: " + equips);
+        assertEquals(4, unequips.size(), "two in speed control, two in the custom loadout: " + unequips);
+        assertEquals(10.0, averageGap(equips.get(1)), 1.0, "slow equip, ticks per piece: " + equips.get(1));
+        assertEquals(1.0, averageGap(equips.get(2)), 0.5, "fast equip, ticks per piece: " + equips.get(2));
+        assertTrue(equips.get(1).getLast() - equips.get(1).getFirst() >= 25, "the slow equip is slow enough to watch");
+        assertTrue(equips.get(2).getLast() - equips.get(2).getFirst() <= 8, "the fast equip is over in a moment");
+        assertTrue(unequips.get(0).getFirst() > equips.get(0).getLast());
+        assertTrue(unequips.get(0).getLast() < equips.get(1).getFirst());
+        assertTrue(equips.get(1).getLast() < unequips.get(1).getFirst());
+        assertTrue(unequips.get(1).getLast() < equips.get(2).getFirst());
+        for (int[] window : new int[][] {{unequips.get(0).getLast(), equips.get(1).getFirst()},
+                {unequips.get(1).getLast(), equips.get(2).getFirst()}}) {
+            assertTrue(samples.stream().anyMatch(s -> s.tick() > window[0] && s.tick() < window[1] && allBare(s)),
+                    "every bot was bare before the next equip");
+        }
+        for (int run = 1; run <= 2; run++) {
+            int end = equips.get(run).getLast();
+            Sample done = samples.stream().filter(s -> s.tick() == end).findFirst().orElseThrow();
+            assertTrue(java.util.Arrays.stream(done.worn()).allMatch(c -> c == 5), "all five complete after equip " + run);
+        }
+    }
+
+    @Test
+    void customLoadoutIsClearedAppliedHeldForAWhileAndClearedAgain() {
+        List<Sample> samples = recordTour();
+        List<List<Integer>> equips = runs(samples, true);
+        List<List<Integer>> unequips = runs(samples, false);
+        int equipEnd = equips.get(3).getLast();
+        assertTrue(unequips.get(2).getLast() < equips.get(3).getFirst(), "cleared before the custom equip");
+        assertTrue(samples.stream().anyMatch(s -> s.tick() > unequips.get(2).getLast()
+                && s.tick() < equips.get(3).getFirst() && allBare(s)), "bare before the custom equip");
+        long shownFor = samples.stream().filter(s -> s.tick() >= equipEnd && s.tick() < unequips.get(3).getFirst()
+                && java.util.Arrays.stream(s.hand()).allMatch(m -> m == Material.NETHERITE_AXE)
+                && java.util.Arrays.stream(s.offhand()).allMatch(m -> m == Material.TOTEM_OF_UNDYING)
+                && java.util.stream.IntStream.range(0, s.helmet().length).noneMatch(k -> s.helmet()[k])).count();
+        assertTrue(shownFor >= 40, "axe, totem and no helmet stayed on all five for " + shownFor + " ticks");
+        assertTrue(allBare(samples.getLast()), "everything is taken off again at the end");
+    }
+
+    @Test
+    void aBotThatLostItsKitIsRestockedSoTheEquipStillHappens() {
+        run(viewer, "demo", "tour");
+        boolean wiped = false;
+        boolean fullAgain = false;
+        while (plugin.tour().running() && clock < 12000) {
+            tickOnce();
+            if (!wiped && shown.stream().anyMatch(s -> s.subtitle().contains("Slow"))
+                    && bots.stream().allMatch(b -> countEquipped(b) == 0)) {
+                wiped = true;
+                bots.get(3).getInventory().clear();
+            } else if (wiped) {
+                fullAgain |= bots.stream().allMatch(b -> countEquipped(b) == 5);
+            }
+        }
+        assertTrue(wiped);
+        assertTrue(fullAgain, "all five, including the one that lost its items, wore the full set afterwards");
+        assertFalse(plugin.tour().running());
     }
 
     @Test
